@@ -49,3 +49,6 @@ Thumbs.db
 # visual studio stuff
 .vs/
 .vscode/
+
+# Test data
+tests/data/*

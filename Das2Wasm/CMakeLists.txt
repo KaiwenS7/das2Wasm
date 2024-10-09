@@ -13,18 +13,23 @@
 
 
 if (DEFINED EMSCRIPTEN)
-	add_executable (Das2Wasm "Das2Wasm.cpp" "Das2Wasm.hpp")
-	if (CMAKE_VERSION VERSION_GREATER 3.12)
-	  set_property(TARGET Das2Wasm PROPERTY CXX_STANDARD 20)
-	endif()
-	#add_definitions(-std=c++17)
-	#set (CMAKE_CXX_STANDARD 17)
-	
-	set(CMAKE_EXECUTABLE_SUFFIX ".html")
-	set_target_properties(Das2Wasm PROPERTIES LINK_FLAGS "-Os -s EXPORTED_FUNCTIONS=['_free','_malloc']")
+	set(EMCC_DEBUG 0)
 
-	#set(CMAKE_EXECUTABLE_SUFFIX ".js")
-	#set_target_properties(Das2Wasm PROPERTIES LINK_FLAGS "-Os -s MODULARIZE -s EXPORTED_FUNCTIONS=['_free','_malloc']")
+	include_directories(${PROJECT_SOURCE_DIR}/include)
+	add_executable (Das2Wasm "Das2Wasm.cpp" "Das2Wasm.hpp")
+	target_include_directories(Das2Wasm PRIVATE ${PROJECT_SOURCE_DIR}/include)
+	if (CMAKE_VERSION VERSION_GREATER 3.12)
+	  set_property(TARGET Das2Wasm PROPERTY CXX_STANDARD 17)
+	endif()
+	add_definitions(-std=c++17)
+	set (CMAKE_CXX_STANDARD 17)
+	
+	#set(CMAKE_EXECUTABLE_SUFFIX ".html")
+	#set_target_properties(Das2Wasm PROPERTIES LINK_FLAGS "-Os -s EXPORTED_FUNCTIONS=['_free','_malloc']")
+
+	set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
+	set_target_properties(Das2Wasm PROPERTIES COMPILE_FLAGS "-Os ")
+	set_target_properties(Das2Wasm PROPERTIES LINK_FLAGS "-Os -s ASSERTIONS -s SINGLE_FILE=1 -s MODULARIZE -s EXPORTED_FUNCTIONS=['_free','_malloc'] -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','stackRestore','stackSave','UTF8ToString'] -sNO_DISABLE_EXCEPTION_CATCHING")
 	
 	#set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 

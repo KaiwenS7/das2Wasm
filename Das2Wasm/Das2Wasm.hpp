@@ -6,10 +6,22 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <string>
+#include "include/json.hpp"
+using json = nlohmann::json;
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#else
+#define EMSCRIPTEN_KEEPALIVE
+#endif
 // TODO: Reference additional headers your program requires here.
 extern "C"
 {
     int add(int a, int b);
     int sub(int a, int b);
+    int sumJSArray(int* arr, int size);
+    int* getCPPArray(int size);
+    int* inOutArray(int* arr, int size);
+    char* delimitPipe(char* arr, int size);
 }
