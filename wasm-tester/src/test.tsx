@@ -1,4 +1,4 @@
-import Module from '../../../out/build/x64-release/Das2Wasm/Das2Wasm.mjs';
+import Module from './parser/Das2Wasm.mjs';
 
   // Function to parse packet headers formatted |x|y|z|
   // Due to the dynamic size of x, y, and z, these have to found instead of assumed

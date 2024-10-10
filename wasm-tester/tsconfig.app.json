@@ -19,7 +19,8 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
   },
-  "include": ["src", "../../out/build/x64-debug/Das2Wasm"],
+  "include": ["src", "definitions"],
 }

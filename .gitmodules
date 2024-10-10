@@ -1,0 +1,6 @@
+# Note on management:
+# To get most recent updates from submodules: git submodule update --remote
+# To commit to the changes: git submodule update --init --recursive
+[submodule "submodules/das2C"]
+	path = submodules/das2C
+	url = https://github.com/das-developers/das2C.git

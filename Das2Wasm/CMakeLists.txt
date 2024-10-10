@@ -35,6 +35,11 @@ if (DEFINED EMSCRIPTEN)
 
 	#set_target_properties(Das2Wasm PROPERTIES COMPILE_FLAGS "-Os -s SIDE_MODULE=1 ")
 	#set_target_properties(Das2Wasm PROPERTIES LINK_FLAGS    "-Os -s WASM=1 -s SIDE_MODULE=1 -s STANDALONE_WASM --no-entry")
+	set(targetfile "${PROJECT_SOURCE_DIR}/wasm-tester/src/parser/Das2Wasm.mjs")
+
+	add_custom_command(TARGET Das2Wasm POST_BUILD
+    	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:Das2Wasm> ${targetfile}
+	)
 else()
 	add_library(Das2Wasm SHARED "Das2Wasm.cpp")
 endif()
