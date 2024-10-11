@@ -92,6 +92,7 @@ class WasmParser extends FunctionFactory{
             this.wasmInstance[type.heap].set(charArray, heapPointer);
             const cppOutputArrPointer3 = this.wasmInstance._delimitPipe(heapPointer, charArray.length); 
             const stringFromCpp = this.wasmInstance.UTF8ToString(cppOutputArrPointer3);
+            console.log("output: ",stringFromCpp)
             jsonFromCpp = JSON.parse(stringFromCpp);
 
         }catch(error){

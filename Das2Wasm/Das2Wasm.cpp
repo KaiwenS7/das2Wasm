@@ -76,9 +76,9 @@ extern "C"
             }
         }
 
-        // Converts to appropriate formats for parsing
-        pointer_func<int>(delimittingPoints.data(), delimittingPoints.size());
+        //pointer_func<int>(delimittingPoints.data(), delimittingPoints.size());
 
+        // Converts to appropriate formats for parsing
         std::string pkgSize(arr+delimittingPoints[2]+1, arr+delimittingPoints[3]);
         std::string pkgType(arr+1, arr+delimittingPoints[1]);
         std::string pkgId(arr+delimittingPoints[1]+1, arr+delimittingPoints[2]);
@@ -92,11 +92,13 @@ extern "C"
             {"pkgId",  pkgId},
         };
 
-        printf("pkgSize: %s\npkgType: %s\nnextIdx: %d\npkgId: %s",pkgSize.c_str(), pkgType.c_str(), nextIdx, pkgId.c_str());
-        auto dumpedString = packetInfoFull.dump();
+        //printf("pkgSize: %s\npkgType: %s\nnextIdx: %d\npkgId: %s",pkgSize.c_str(), pkgType.c_str(), nextIdx, pkgId.c_str());
+        auto dumpedString = packetInfoFull.dump(-1, ' ', true);
 
         char* array = new char[dumpedString.length()]; // Allocate memory for the array
         std::copy(dumpedString.begin(), dumpedString.end(), array); // Copy vector elements to the array
+        array[dumpedString.length()] = '\0';
+        
         return array;
 
     }
