@@ -12,7 +12,6 @@ test('worker', async () => {
         promiseResolve = resolve;
         promiseReject = reject;
     });
-
     worker.postMessage("|Hx|10|1584|fkdslfjsdlfjsdljjljsdfljsd")
     worker.onmessage = (e) => {
         // e.data equals to 'hello world'

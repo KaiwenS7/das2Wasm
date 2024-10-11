@@ -1,4 +1,5 @@
 import {convertSchemaToDocument, convertSchemaToDocumentCoord} from "./Schema";
+import { DOMParser } from 'xmldom-qsa'
 
 function readFileAsync(file) {
     return new Promise((resolve, reject) => {

@@ -103,7 +103,7 @@ class WasmParser extends FunctionFactory{
     }
 
     override async init(){
-        this.wasmInstance = await WasmModule();
+        if(!this.wasmInstance) this.wasmInstance = await WasmModule();
     }
 
     public static override get instance():FunctionFactory{

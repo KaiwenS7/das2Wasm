@@ -1,5 +1,5 @@
 import SchemaParser from "./SchemaParser";
-import { DOMParser } from "xmldom";
+import { DOMParser } from '@xmldom/xmldom'
 import * as FunctionInjector from "./ParserFunctionInjector";
 
 function readFileAsync(file) {
@@ -18,7 +18,7 @@ function readFileAsync(file) {
   
 class DataParser{
 
-  constructor(schema, xsdCoord=true, coordsys={}, staticKeys={}, streams={}, streamHeader=null, funcInjection=FunctionInjector.JsParser, debug=true){
+  constructor(schema, xsdCoord=true, coordsys={}, staticKeys={}, streams={}, streamHeader=null, funcInjection=FunctionInjector.JsParser, debug=false){
     this.schema = schema;
     this.streamHeader = streamHeader;
     this.coordsys = coordsys;
@@ -30,7 +30,7 @@ class DataParser{
     this.performanceTiggers = 0;
     this.debug = debug;
     this.xsdCoord = xsdCoord;
-    this.delimitPipe = funcInjection.instance.delimitPipe();
+    this.delimitPipe = funcInjection.instance.delimitPipe;
   }
 
   getParserState(){
@@ -143,19 +143,6 @@ class DataParser{
         return {currPacketSize, currPacketId, currPacketType, nextIdx, breakout: true};
       nextIdx = packetInfo.nextIdx+currIdx;
     }else {
-      if(/(d)/.test(currPacketType))
-        return {currPacketSize, currPacketId, currPacketType, nextIdx, breakout: true};
-
-      var contentXML = parser.parseFromString(DataParser.stringMapper(valueStream), "text/xml");
-      if(/(Sx)/.test(currPacketType)){
-        this.recursiveBuild(this.streamHeader, contentXML, currPacketId, false);
-      }
-      else if(/(Hx)/.test(currPacketType) || /(Cx)/.test(currPacketType) || /(Ex)/.test(currPacketType))
-      {
-        //props = convert.xml2json(stringMapper(valueStream), options)
-        this.recursiveBuild(this.streams[currPacketId], contentXML, currPacketId, false);
-      }
-      
       currPacketSize = (100 > content.byteLength - nextIdx)? content.byteLength : 100;
     }
     return {currPacketSize, currPacketId, currPacketType, nextIdx};
@@ -271,8 +258,6 @@ class DataParser{
           }
 
         }else {
-          var  parsedData = Object(this.parseData(dataProps, content, currPacketSize, currIdx, currPacketId));
-          yield parsedData;
           currPacketSize = 100;
           
         } // Else
@@ -282,10 +267,6 @@ class DataParser{
         step = step + 1;
       }
 
-      if(this.debug){
-        console.log(`step ${step} parse runtime: ${performance.now() - mainstart}`);
-        console.log(this.performances)
-      }
 
       //SchemaParser.cleanSchema(this.schema);
       return {content: null, step: step};
