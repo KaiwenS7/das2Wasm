@@ -84,22 +84,29 @@ class WasmParser extends FunctionFactory{
 
         // use WASM function to delimit pipe
         const type = WasmParser.TYPES.u8;
-        var sp = this.wasmInstance.stackSave();
+        //var sp = this.wasmInstance.stackSave();
         const heapPointer = this.wasmInstance._malloc(charArray.length);
         var jsonFromCpp:any = null;
         try{
 
             this.wasmInstance[type.heap].set(charArray, heapPointer);
             const cppOutputArrPointer3 = this.wasmInstance._delimitPipe(heapPointer, charArray.length); 
-            const stringFromCpp = this.wasmInstance.UTF8ToString(cppOutputArrPointer3);
-            console.log("output: ",stringFromCpp)
-            jsonFromCpp = JSON.parse(stringFromCpp);
+            var stringFromCpp = this.wasmInstance.UTF8ToString(cppOutputArrPointer3);
+            if(stringFromCpp[stringFromCpp.length-1] !== '}'){
+                jsonFromCpp = JSON.parse(stringFromCpp.substring(0, stringFromCpp.lastIndexOf('}')+1));
+            }else{
+                jsonFromCpp = JSON.parse(stringFromCpp);
 
+            }
+            this.wasmInstance._free(heapPointer);
         }catch(error){
-        this.wasmInstance.stackRestore(sp);
+            //this.wasmInstance.stackRestore(sp);
+            console.log(stringFromCpp);
+
             console.error(error)
+            this.wasmInstance._free(heapPointer);
+            throw error;
         }
-        this.wasmInstance._free(heapPointer);
         return jsonFromCpp;
     }
 
@@ -112,4 +119,65 @@ class WasmParser extends FunctionFactory{
     }
 }
 
-export {FunctionFactory, JsParser, WasmParser};
+const validInputGenerator = (override=0) => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '123456789';
+
+    let tempStreamType = uppercase.charAt(Math.floor(Math.random() * uppercase.length))
+                        + lowercase.charAt(Math.floor(Math.random() * lowercase.length))
+
+    if(override){
+        for(let i = 0; i < override; i++){
+            tempStreamType += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+        }
+    }
+    
+    var result = '|'
+      + tempStreamType
+      + "|";
+  
+    let counter = 0;
+    let triggerPipe = false;
+    let lengthOfPkgId = Math.floor(Math.random() * 4) + 1;
+    let lengthOfPkgSize = Math.floor(Math.random() * (8)) + 1;
+    let randomExtra = Math.floor(Math.random() * 70) + 5;
+    var pkgId = "";
+    var pkgSize = 0;
+
+    var tempSize = "";
+    while (counter < lengthOfPkgId + lengthOfPkgSize + randomExtra + 2+1) {
+        if(lengthOfPkgId === counter || lengthOfPkgSize + lengthOfPkgId + 1 === counter){
+            result += "|";
+            triggerPipe = true;
+        }else if(counter >=( lengthOfPkgId + lengthOfPkgSize + 2)){
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
+        }else{
+            if(triggerPipe && pkgId === ""){
+                pkgId = structuredClone(tempSize);
+                tempSize = "";
+                triggerPipe = false;
+            }
+            var temp = numbers.charAt(Math.floor(Math.random() * numbers.length));
+            tempSize += structuredClone(temp);
+            result += structuredClone(temp);
+        }
+        counter += 1;
+    }
+    pkgSize = parseInt(tempSize);
+
+    var pckinfo: parser.packetInfo = {
+        pkgSize: pkgSize, 
+        pkgType: tempStreamType, 
+        nextIdx: lengthOfPkgId + lengthOfPkgSize + 4 + tempStreamType.length, 
+        pkgId: pkgId};
+
+    //console.log(result);
+    //console.log(pckinfo);
+    return {result: result, pckinfo: pckinfo};
+  
+}
+  
+
+export {FunctionFactory, JsParser, WasmParser, validInputGenerator};

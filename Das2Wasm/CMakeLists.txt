@@ -29,7 +29,7 @@ if (DEFINED EMSCRIPTEN)
 
 	set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
 	set_target_properties(Das2Wasm PROPERTIES COMPILE_FLAGS "-Os ")
-	set_target_properties(Das2Wasm PROPERTIES LINK_FLAGS "-Os -s ASSERTIONS -s SINGLE_FILE=1 -s MODULARIZE -s EXPORTED_FUNCTIONS=['_free','_malloc'] -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','stackRestore','stackSave','UTF8ToString'] -sNO_DISABLE_EXCEPTION_CATCHING")
+	set_target_properties(Das2Wasm PROPERTIES LINK_FLAGS "-Os -s ASSERTIONS -sALLOW_MEMORY_GROWTH -s SINGLE_FILE=1 -s MODULARIZE -s EXPORTED_FUNCTIONS=['_free','_malloc'] -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','stackRestore','stackSave','UTF8ToString'] -sNO_DISABLE_EXCEPTION_CATCHING")
 	
 	#set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 

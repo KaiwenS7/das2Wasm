@@ -4,7 +4,7 @@ import viteConfig from './vite.config.ts'
 
 export default mergeConfig(viteConfig, defineConfig({
     test: {
-        reporters: ['default', 'json'],
+        reporters: ['default'],
         outputFile: "./test/results.json",
         setupFiles: ['@vitest/web-worker'],
         typecheck: {
