@@ -11,7 +11,38 @@
             "toolchainFile": "C:/CodingTools/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
-                "CMAKE_CXX_COMPILER": "cl.exe"
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "BOOST_ROOT": "C:/CodingTools/boost/boost_1_86_0/boost",
+                "Boost_INCLUDE_DIR": "C:/CodingTools/boost/boost_1_86_0/include/boost-1_86/boost",
+                "Boost_LIBRARY_DIR": "C:/CodingTools/boost/boost_1_86_0/out/lib",
+                "Boost_DIR": "C:/CodingTools/boost/boost_1_86_0/out/lib/cmake/Boost-1.86.0",
+                "boost_headers_DIR": ""
+                
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "vcpkg-emscripten",
+            "displayName": "vcpkg-emscripten",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "toolchainFile": "$env{VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake",
+            
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "EMSCRIPTEN": "ON",
+                "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "C:/CodingTools/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
             },
             "condition": {
                 "type": "equals",

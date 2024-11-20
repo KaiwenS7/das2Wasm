@@ -107,4 +107,42 @@ extern "C"
         return array;
 
     }
+    
+    // EMSCRIPTEN_KEEPALIVE
+    // char* parseHeader(char* arr, int size){
+    //     // Function that takes the original XML header and returns a JSON object with all the necessary information
+    //     var currIdx = 0;
+    //     var nextIdx = 0;
+    //     // steps
+    //     // 0 = packet type
+    //     // 1 = packet ID
+    //     // 2 = packet size in bytes
+    //     // 3 = packet data
+    //     var currPacketType = "";
+    //     var currPacketSize = (100 > content.byteLength)? content.byteLength : 100;
+    //     var currPacketId = 0;
+
+    //     while(currIdx < content.byteLength){
+    //         nextIdx = currIdx + currPacketSize
+        
+    //         var valueStream = new Uint8Array(content.slice(currIdx, nextIdx))
+
+    //         let info = this.addToHeader(content, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
+    //         // Move to next split
+    //         if(info.breakout)
+    //             break;
+    //         currPacketType = info.currPacketType;
+    //         currPacketId = info.currPacketId;
+    //         currPacketSize = info.currPacketSize;
+    //         currIdx = info.nextIdx;
+    //         step = step + 1;
+    //     }
+
+
+    //     if(currIdx >= content.byteLength)
+    //     return {content: new ArrayBuffer(0), step: step};
+    //     var slice = content.slice(currIdx, content.byteLength);
+    //     return {content: slice, step: step};
+    //     return arr;
+    // }
 }

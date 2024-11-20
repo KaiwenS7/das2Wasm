@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include "include/json.hpp"
+#include <boost/property_tree/json_parser.hpp>
 using json = nlohmann::json;
 
 #ifdef __EMSCRIPTEN__
@@ -24,4 +25,5 @@ extern "C"
     int* getCPPArray(int size);
     int* inOutArray(int* arr, int size);
     char* delimitPipe(char* arr, int size);
+    char* parseHeader(char* arr, int size);
 }
