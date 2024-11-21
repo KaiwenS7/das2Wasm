@@ -7,8 +7,10 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <streambuf>
 #include "include/json.hpp"
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 using json = nlohmann::json;
 
 #ifdef __EMSCRIPTEN__

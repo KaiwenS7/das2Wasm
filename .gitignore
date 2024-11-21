@@ -28,7 +28,7 @@ Makefile
 *.dylib
 *.exe
 *.out
-
+*.mjs
 # Ignore logs and databases
 *.log
 *.sql

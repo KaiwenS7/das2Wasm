@@ -1,0 +1,80 @@
+<dataset name="magic_fm3_coverage" plot="cartesian2d" rank="1" index="*">
+  <coord axis="x" physDim="time" >
+    <properties><p name="label">UTC</p></properties>
+    <scalar use="center" valType="datetime" index="*" units="TT2000">
+      <packet numItems="1" itemBytes="8" encoding="LEint" />
+    </scalar>
+  </coord>
+  <data name="total" physDim="rate" >
+    <properties>
+      <p name="label">Total Rate</p>
+      <p name="info">Total rate for all packets/min - MAGIC packets</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x201" physDim="rate" >
+    <properties>
+      <p name="label">0x201 Rate</p>
+      <p name="info">Housekeeping</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x202" physDim="rate" >
+    <properties>
+      <p name="label">0x202 Rate</p>
+      <p name="info">DC Mag 3-Vectors at 128 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x203" physDim="rate" >
+    <properties>
+      <p name="label">0x203 Rate</p>
+      <p name="info">DC Mag 3-Vectors at 16 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x204" physDim="rate" >
+    <properties>
+      <p name="label">0x204 Rate</p>
+      <p name="info">Slow Housekeeping</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x20f" physDim="rate" >
+    <properties>
+      <p name="label">0x20f Rate</p>
+      <p name="info">Raw Frames at 128 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x212" physDim="rate" >
+    <properties>
+      <p name="label">0x212 Rate</p>
+      <p name="info">DC Mag 3-Vectors at 128 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x213" physDim="rate" >
+    <properties>
+      <p name="label">0x213 Rate</p>
+      <p name="info">DC Mag 3-Vectors at 16 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+</dataset>

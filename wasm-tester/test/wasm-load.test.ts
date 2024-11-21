@@ -26,3 +26,9 @@ test('Test setting up module for general use', async () => {
   expect(result.pkgId).toBe("10");
 
 })
+
+test('Test parsing of an xml header strea' , async () => {
+  var instance = funcParser.WasmParser.instance
+  await instance.init();
+  
+})

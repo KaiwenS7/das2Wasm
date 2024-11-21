@@ -4,6 +4,8 @@ abstract class FunctionFactory{
     // Function to parse packet headers formatted |x|y|z|
     // Due to the dynamic size of x, y, and z, these have to found instead of assumed
     public abstract delimitPipe(valueStream:Uint8Array):parser.packetInfo;
+    public abstract parseHeader(valueStream:Uint8Array):void;
+
     protected constructor(){}
     protected static _instance:FunctionFactory;
     public static get instance():FunctionFactory{
@@ -63,6 +65,10 @@ class JsParser extends FunctionFactory{
         return packetInfoFull;
     }
 
+    public parseHeader(valueStream: Uint8Array): void {
+        throw new Error("Method not implemented.");
+    }
+
     public static override get instance():FunctionFactory{
         return this._instance || (this._instance = new JsParser());
     }
@@ -108,6 +114,29 @@ class WasmParser extends FunctionFactory{
             throw error;
         }
         return jsonFromCpp;
+    }
+
+    public parseHeader(charArray: Uint8Array): void {
+        if(!this.wasmInstance){
+            return;
+        }
+
+        // use WASM function to delimit pipe
+        const type = WasmParser.TYPES.u8;
+        //var sp = this.wasmInstance.stackSave();
+        const heapPointer = this.wasmInstance._malloc(charArray.length);
+        try{
+
+            this.wasmInstance[type.heap].set(charArray, heapPointer);
+            const cppOutputArrPointer3 = this.wasmInstance._parseHeader(heapPointer, charArray.length); 
+            this.wasmInstance.UTF8ToString(cppOutputArrPointer3);
+            this.wasmInstance._free(heapPointer);
+        }catch(error){
+            //this.wasmInstance.stackRestore(sp);
+            console.error(error)
+            this.wasmInstance._free(heapPointer);
+            throw error;
+        }
     }
 
     override async init(){
