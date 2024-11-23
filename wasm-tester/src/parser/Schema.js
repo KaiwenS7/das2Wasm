@@ -1,6 +1,6 @@
 
 import das2CSchema from '../../../submodules/das2C/schema/das-basic-stream-v3.0.xsd?raw'
-import { DOMParser } from 'xmldom-qsa'
+import { DOMParser } from '@xmldom/xmldom'
 
 function convertSchemaToDocument(){
   const schema=`<?xml version="1.0"?>

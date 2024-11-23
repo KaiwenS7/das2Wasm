@@ -1,10 +1,13 @@
 import WasmModule from "./Das2Wasm.mjs";
+import EmbindModule from "./Das2WasmEmbind.mjs";
 
+const useEmbind = true;
 abstract class FunctionFactory{
     // Function to parse packet headers formatted |x|y|z|
     // Due to the dynamic size of x, y, and z, these have to found instead of assumed
     public abstract delimitPipe(valueStream:Uint8Array):parser.packetInfo;
     public abstract parseHeader(valueStream:Uint8Array):void;
+    public abstract parseSchema(valueStream:Uint8Array):void;
 
     protected constructor(){}
     protected static _instance:FunctionFactory;
@@ -65,7 +68,11 @@ class JsParser extends FunctionFactory{
         return packetInfoFull;
     }
 
-    public parseHeader(valueStream: Uint8Array): void {
+    parseHeader(valueStream: Uint8Array): void {
+        throw new Error("Method not implemented.");
+    }
+
+    parseSchema(valueStream: Uint8Array): void {
         throw new Error("Method not implemented.");
     }
 
@@ -87,7 +94,11 @@ class WasmParser extends FunctionFactory{
                 nextIdx: -1, 
                 pkgId:  "",
             };
+        if(useEmbind){
+            return JSON.parse(this.wasmInstance.delimitPipe(new TextDecoder().decode(charArray)));
+        }
 
+        
         // use WASM function to delimit pipe
         const type = WasmParser.TYPES.u8;
         //var sp = this.wasmInstance.stackSave();
@@ -116,7 +127,7 @@ class WasmParser extends FunctionFactory{
         return jsonFromCpp;
     }
 
-    public parseHeader(charArray: Uint8Array): void {
+    parseHeader(charArray: Uint8Array): void {
         if(!this.wasmInstance){
             return;
         }
@@ -139,8 +150,37 @@ class WasmParser extends FunctionFactory{
         }
     }
 
+    parseSchema(charArray: Uint8Array): void {
+        if(!this.wasmInstance){
+            return;
+        }
+
+        // use WASM function to delimit pipe
+        const type = WasmParser.TYPES.u8;
+        //var sp = this.wasmInstance.stackSave();
+        const heapPointer = this.wasmInstance._malloc(charArray.length);
+        try{
+
+            this.wasmInstance[type.heap].set(charArray, heapPointer);
+            const cppOutputArrPointer3 = this.wasmInstance._parseSchema(heapPointer, charArray.length); 
+            this.wasmInstance.UTF8ToString(cppOutputArrPointer3);
+            this.wasmInstance._free(heapPointer);
+        }catch(error){
+            //this.wasmInstance.stackRestore(sp);
+            console.error(error)
+            this.wasmInstance._free(heapPointer);
+            throw error;
+        }
+
+    }
+
     override async init(){
-        if(!this.wasmInstance) this.wasmInstance = await WasmModule();
+        if(!this.wasmInstance) {
+            if(useEmbind)
+                this.wasmInstance = await EmbindModule();
+            else
+                this.wasmInstance = await WasmModule();
+        }
     }
 
     public static override get instance():FunctionFactory{

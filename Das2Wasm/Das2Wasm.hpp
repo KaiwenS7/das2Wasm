@@ -8,6 +8,9 @@
 #include <vector>
 #include <string>
 #include <streambuf>
+
+#include "helpers.hpp"
+#include "schema.hpp"
 #include "include/json.hpp"
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -28,4 +31,8 @@ extern "C"
     int* inOutArray(int* arr, int size);
     char* delimitPipe(char* arr, int size);
     char* parseHeader(char* arr, int size);
+    char* parseSchema(char* arr, int size);
+    char* parseData(char* arr, int size);
+
+
 }

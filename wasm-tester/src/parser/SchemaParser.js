@@ -1,20 +1,4 @@
 import {convertSchemaToDocument, convertSchemaToDocumentCoord} from "./Schema";
-import { DOMParser } from 'xmldom-qsa'
-
-function readFileAsync(file) {
-    return new Promise((resolve, reject) => {
-      let reader = new FileReader();
-  
-      reader.onload = () => {
-        resolve(reader.result);
-      };
-  
-      reader.onerror = reject;
-  
-      reader.readAsArrayBuffer(file);
-    })
-  }
-
 class SchemaParser{
     static schemaSequenceName = 'elements'
     static xsdCoord =true;
@@ -25,16 +9,6 @@ class SchemaParser{
         this.debug = false;
     }
 
-    async parseXsdFromFile(file){
-        let content = await readFileAsync(file);
-        var parser = new DOMParser();
-
-        var stringMapper = (buffer, type = 'utf-8')=>{return new TextDecoder(type).decode(buffer)};
-
-        var schema = parser.parseFromString(stringMapper(content), 'application/xml');
-        this.parsing(schema)
-
-    }
 
     parseXsd(){
         var schema = (SchemaParser.xsdCoord)? convertSchemaToDocumentCoord():convertSchemaToDocument();
@@ -42,9 +16,9 @@ class SchemaParser{
     }
 
     parsing(schema){
-        schema = schema.querySelector('schema');
-        var toplvl = schema.querySelectorAll(':scope > element');
-        this.complexTypes = Array.from(schema.querySelectorAll(':scope > complexType'));
+        schema = schema.getElementsByTagName("xs:schema")[0];
+        var toplvl = schema.getElementsByTagName("xs:element");
+        this.complexTypes = Array.from(schema.getElementsByTagName('xs:complexType'));
         this.schema = new Node();
 
         
@@ -54,10 +28,10 @@ class SchemaParser{
     }
 
     buildSequence(node, schema = new Node()){
-        node.querySelectorAll(':scope > element').forEach((x)=>{
+        Array.from(node.getElementsByTagName("xs:element")).forEach((x)=>{
             schema = this.buildElement(x, schema)
         })
-        node.querySelectorAll(":scope > choice").forEach((x)=>{
+        Array.from(node.getElementsByTagName("xs:choice")).forEach((x)=>{
             schema['choice'] = this.buildChoices(x);
             schema['choice'] = this.accountForMultiple(x, schema['choice'], true);
         })
@@ -65,7 +39,7 @@ class SchemaParser{
     }
 
     buildChoices(node, schema = new Node()){
-        var choices = node.querySelectorAll(":scope > element");
+        var choices = node.getElementsByTagName("xs:element");
         // lambda approach
         if(this.lambdaApproach){
             var pickChoice = (x)=>{
@@ -83,7 +57,7 @@ class SchemaParser{
         }
 
         // value approach
-        choices.forEach((x)=>{
+        Array.from(choices).forEach((x)=>{
             schema = this.buildElement(x, schema);
         })
         return schema
@@ -100,21 +74,26 @@ class SchemaParser{
         var usedName = (baseName)? baseName:name;
         usedName = usedName.toLowerCase();
         schema[usedName] = new Node();
-        element.querySelectorAll(":scope > sequence").forEach((x)=>{
+        Array.from(element.getElementsByTagName("xs:sequence")).forEach((x)=>{
             schema[usedName][SchemaParser.schemaSequenceName] = this.buildSequence(x);
         });
-        element.querySelectorAll(":scope > choice").forEach((x)=>{
+        Array.from(element.getElementsByTagName("xs:choice")).forEach((x)=>{
             schema[usedName]["choice"]=this.buildChoices(x);
             schema[usedName]["choice"] = this.accountForMultiple(x, schema[usedName]["choice"], true);
         });
 
+        
         var attr;
-        var simpleContent = element.querySelectorAll(":scope > simpleContent");
+        var simpleContent = element.getElementsByTagName("xs:simpleContent");
         if(simpleContent.length > 0){
-            attr = element.querySelectorAll(":scope > simpleContent > extension > attribute")
+            attr = element.
+                getElementsByTagName("xs:simpleContent")[0].
+                getElementsByTagName("xs:extension")[0].
+                getElementsByTagName("xs:attribute")
         }else{
-            attr = element.querySelectorAll(":scope > attribute")
+            attr = element.getElementsByTagName("xs:attribute")
         }
+        attr = Array.from(attr);
         if(attr.length > 0){
             schema[usedName]["attributes"] = {};
             attr.forEach((x)=>{
@@ -129,6 +108,7 @@ class SchemaParser{
     accountForMultiple(element, schema = new Node(), choice=false, bypass=false){
         if(element.hasAttribute('minOccurs') || element.hasAttribute('maxOccurs') || bypass){
             let addArrayElement = (part)=>{
+                if(part.nodeName === '#text') return;
                 schema[part.getAttribute('name').toLowerCase()]["occurs"] = 0;
                 if(schema[part.getAttribute('name').toLowerCase()].hasOwnProperty('attributes')){
                     Object.keys(schema[part.getAttribute('name').toLowerCase()]["attributes"]).forEach((ele)=>{
@@ -147,7 +127,7 @@ class SchemaParser{
                 
             }
             if(choice){
-                for(let child of element.children){
+                for(let child of element.childNodes){
                     addArrayElement(child)
                 }
             }
