@@ -2,7 +2,8 @@
 import {  test,  expectTypeOf, expect } from 'vitest'
 import * as funcParser from "../src/parser/ParserFunctionInjector"
 import streamHeader from './data/stream.xml?raw'
-import SchemaParser from '../src/parser/SchemaParser' 
+import schema from './data/schema.txt?raw'
+
 
 //import Module from '../src/Das2Wasm.mjs';
 
@@ -27,16 +28,14 @@ test('Test setting up module for general use', async () => {
 
 })
 
-test.skip('Test parsing JSON object schema' , async () => {
+test('Test parsing JSON object schema' , async () => {
   var instance = funcParser.WasmParser.instance
   await instance.init();
 
-  var parser = new SchemaParser();
-  parser.parseXsd();  
+  var val=Uint8Array.from(schema.split('').map((c:string) => c.charCodeAt(0)))
 
-  var val=Uint8Array.from(JSON.stringify(parser.schema).split('').map((c:string) => c.charCodeAt(0)))
-
-  instance.parseSchema(val);
+  var schem = instance.parseSchema(val);
+  expect(schem).toEqual(JSON.parse(schema));
 })
 
 test.skip('Test parsing of an xml header strea' , async () => {

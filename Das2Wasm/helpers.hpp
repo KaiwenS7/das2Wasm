@@ -5,9 +5,13 @@
 #include <streambuf>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include "include/pugixml.hpp"
+#include "include/json.hpp"
 
+using json = nlohmann::json;
 using namespace std;
 namespace pt = boost::property_tree;
+
 
 // Function that takes a pointer to a template array and its size to print the elements
 template <typename T>
@@ -66,4 +70,12 @@ void printTree(pt::ptree &ptObject, int level)
     }
     std::cout << std::endl;
     return;
+}
+
+json& findElement(json& schema, std::string name){
+
+}
+
+void fillElement(json& element, pugi::xml_node& xml){
+
 }

@@ -3,6 +3,8 @@ import EmbindModule from "./Das2WasmEmbind.mjs";
 
 const useEmbind = true;
 abstract class FunctionFactory{
+    protected DataParser: any = null;
+
     // Function to parse packet headers formatted |x|y|z|
     // Due to the dynamic size of x, y, and z, these have to found instead of assumed
     public abstract delimitPipe(valueStream:Uint8Array):parser.packetInfo;
@@ -83,7 +85,9 @@ class JsParser extends FunctionFactory{
 
 class WasmParser extends FunctionFactory{
     private wasmInstance: any;
+    
     private constructor(){super();}
+    
 
     delimitPipe(charArray: Uint8Array):parser.packetInfo {
         // Check if wasmInstance is initialized
@@ -131,7 +135,21 @@ class WasmParser extends FunctionFactory{
         if(!this.wasmInstance){
             return;
         }
+        if(useEmbind){
+            // Generate temporary data parser since management of memory needs to be done manually.
+            var schema = null;
+            try {
+                this.DataParser.parseSchema(new TextDecoder().decode(charArray));
+                
 
+                // Final schema should have the header information separated into the component parts
+                schema = JSON.parse(this.DataParser.schema_readonly);
+            } catch (error) {
+                console.error(error);
+            }
+
+            return schema;
+        }
         // use WASM function to delimit pipe
         const type = WasmParser.TYPES.u8;
         //var sp = this.wasmInstance.stackSave();
@@ -154,7 +172,13 @@ class WasmParser extends FunctionFactory{
         if(!this.wasmInstance){
             return;
         }
-
+        if(useEmbind){
+            var instance = new this.wasmInstance.DataParser();
+            instance.parseSchema(new TextDecoder().decode(charArray));
+            var schema = JSON.parse(instance.schema_readonly);
+            instance.delete();
+            return schema;
+        }
         // use WASM function to delimit pipe
         const type = WasmParser.TYPES.u8;
         //var sp = this.wasmInstance.stackSave();
@@ -176,10 +200,19 @@ class WasmParser extends FunctionFactory{
 
     override async init(){
         if(!this.wasmInstance) {
-            if(useEmbind)
+            if(useEmbind){
                 this.wasmInstance = await EmbindModule();
+                this.DataParser = this.wasmInstance.DataParser;
+            }
             else
                 this.wasmInstance = await WasmModule();
+        }
+    }
+
+    destroy(){
+        if(this.DataParser){
+            this.DataParser.delete();
+            this.DataParser = null;
         }
     }
 
