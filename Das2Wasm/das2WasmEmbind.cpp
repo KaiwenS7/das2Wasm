@@ -88,6 +88,8 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
 
     }
 
+    schema["stream"].update(streamHeader);
+
     this->step = step;
     return arr.substr(currIdx, arr.size());
 }
@@ -198,7 +200,7 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
 
         auto schemaChildElement = findElement(schema, childName);
         fillElement(schemaChildElement, child);
-
+        
         if(childName.find("coord") != std::string::npos || (childName == "data")){
             // Extended to maintain different coordsys for each stream
             auto currentName = "";
@@ -239,12 +241,18 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
                 recursiveBuild(schemaChildElement["elements"], child, packetId);
             }
         }
+        
+        updateSchema(schema, schemaChildElement, childName);
+
     }
     
 }
 
 std::string DataParser::getSchema() const {
     return schema.dump(-1, ' ', true);
+}
+std::string DataParser::getHeader() const {
+    return streamHeader.dump(-1, ' ', true);
 }
 
 EMSCRIPTEN_BINDINGS(das2WasmEmbind){
@@ -257,5 +265,7 @@ EMSCRIPTEN_BINDINGS(das2WasmEmbind){
         .constructor<>()
         .function("parseSchema", &DataParser::parseSchema)
         .function("parseHeader", &DataParser::parseHeader)
-        .property("schema_readonly", &DataParser::getSchema);
+        .property("schema_readonly", &DataParser::getSchema)
+        .property("header_readonly", &DataParser::getHeader);
+
 }

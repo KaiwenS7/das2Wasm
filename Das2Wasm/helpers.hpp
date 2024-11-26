@@ -131,3 +131,36 @@ void fillElement(json& element, pugi::xml_node& xml){
         element["occurs"] = (int)element["occurs"] + 1;
     }
 }
+
+void updateSchema(json& root, json& elementToUpdate, std::string name){
+    bool found = !root[name].is_null();
+    if(found){
+        root[name].update(elementToUpdate);
+        return;
+    }
+
+    for(auto& element : root.items()){
+        if(!element.value()[name].is_null()){
+            element.value()[name].update(elementToUpdate);
+            return;
+        }
+        else if(element.value()["elements"].is_array()){
+            for(auto& deepElement: element.value()["elements"]){
+                if(!element.value()[name].is_null()){
+                    element.value()[name].update(elementToUpdate);
+                    return;
+                }
+
+            }
+        }
+        else if(element.value()["choice"].is_array()){
+            for(auto& deepElement: element.value()["choice"]){
+                if(!element.value()[name].is_null()){
+                    element.value()[name].update(elementToUpdate);
+                    return;
+                }
+
+            }
+        }
+    }
+}

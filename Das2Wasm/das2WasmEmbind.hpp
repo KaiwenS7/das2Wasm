@@ -55,5 +55,6 @@ class DataParser{
                         int nextIdx, int currIdx);
         // Getters
         std::string getSchema() const;
+        std::string getHeader() const;
 
 };

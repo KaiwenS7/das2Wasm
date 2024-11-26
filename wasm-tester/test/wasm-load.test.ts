@@ -46,5 +46,7 @@ test('Test parsing of an xml header strea' , async () => {
   instance.parseSchema(val);
   val=Uint8Array.from(streamHeader.split('').map((c:string) => c.charCodeAt(0)))
   var schem = instance.parseHeader(val);
-  console.log(schem);
+  console.log("Schema attributes: ", schem.stream.attributes);
+  expect(schem.stream.attributes.version).toEqual("3.0");
+  console.log("Schema stream: ", schem.stream.elements.properties.elements[0].p.value);
 })
