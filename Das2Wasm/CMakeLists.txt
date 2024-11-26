@@ -43,13 +43,13 @@ if (DEFINED EMSCRIPTEN)
     	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:Das2Wasm> ${targetfile}
 	)
 
-	add_executable (Das2WasmEmbind "das2WasmEmbind.cpp" "das2WasmEmbind.hpp" "helpers.hpp")
+	# Emscripten build for binary written into the JavaScript file
+	add_executable(Das2WasmEmbind "das2WasmEmbind.cpp" "das2WasmEmbind.hpp" "helpers.hpp" "include/pugiconfig.hpp" "include/pugixml.hpp" "include/pugixml.cpp")
 	target_include_directories(Das2WasmEmbind PRIVATE ${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIR})
-
 	target_link_libraries(Das2WasmEmbind PUBLIC  
 		Boost::property_tree
 	)
-
+	
 	if (CMAKE_VERSION VERSION_GREATER 3.12)
 	  set_property(TARGET Das2WasmEmbind PROPERTY CXX_STANDARD 17)
 	endif()

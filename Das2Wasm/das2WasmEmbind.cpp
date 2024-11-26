@@ -83,6 +83,7 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
         currPtr = currPtr+(int)info["nextIdx"];
         step = step + 1;
     }
+    return arr.substr(*currPtr, *arrPtr+arr.size());
 }
 
 json DataParser::addToHeader(std::string content, std::string valueStream, 
@@ -224,9 +225,9 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
         }else{
             // build out sibling elements or single elements if not an array
             if(typeid(schemaChildElement["elements"]) == typeid(json::array_t)) 
-                recursiveBuild(schemaChildElement['elements'][schemaChildElement["occurs"]-1], child, packetId);
+                recursiveBuild(schemaChildElement["elements"][(int)((int)schemaChildElement["occurs"]-1)], child, packetId);
             else 
-                recursiveBuild(schemaChildElement['elements'], child, packetId);
+                recursiveBuild(schemaChildElement["elements"], child, packetId);
         }
 
     }

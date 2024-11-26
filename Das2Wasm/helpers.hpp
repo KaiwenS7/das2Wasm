@@ -73,9 +73,61 @@ void printTree(pt::ptree &ptObject, int level)
 }
 
 json& findElement(json& schema, std::string name){
+    bool found = !schema[name].is_null();
+    if(found){
+        return schema[name];
+    }
 
+    for(auto& element : schema.items()){
+        if(!element.value()[name].is_null()){
+            return element.value()[name];
+        }
+        else if(element.value()["elements"].is_array()){
+            return findElement(element.value()["elements"], name);
+        }
+        else if(element.value()["choice"].is_array()){
+            return findElement(element.value()["choice"], name);
+        }
+    }
+    return schema;
 }
 
 void fillElement(json& element, pugi::xml_node& xml){
+    bool occurs = !element["occurs"].is_null();
+    if(element.contains("elements") && occurs){
+        json newElement = json::object();
+        newElement.update(element["elements"][element["elements"].size()-1]);
+        element["elements"].push_back(newElement);
+    }
+    if(element.contains("attributes")){
+        for(auto& attribute : element["attributes"].items()){
+            if(!occurs){
+                element["attributes"][attribute.key()] = xml.attribute(attribute.key().c_str()).value();
+            }else{
+                element["attributes"][attribute.key()].push_back(xml.attribute(attribute.key().c_str()).value());
+            }
+        }
+    }
 
+    if(element.contains("value")){
+        if(!occurs){
+            element["value"] = xml.child_value();
+        }else{
+            element["value"].push_back(xml.child_value());
+        }
+    }
+    string refName(xml.name());
+    if(refName.find("values") > 0){
+        if(!occurs){
+            element["value"] = xml.child_value();
+        }else{
+            if(!element.contains("value")){
+                element["value"] = json::array();
+            }
+            element["value"].push_back(xml.child_value());
+        }
+    }
+    if(occurs){
+        element["occurs"] = (int)element["occurs"] + 1;
+    }
 }
