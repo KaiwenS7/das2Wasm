@@ -52,7 +52,7 @@ class DataParser{
         json addToHeader(std::string content, std::string valueStream, 
                         unsigned int currPacketSize, std::string currPacketType, 
                         std::string currPacketId, unsigned int step, 
-                        uint8_t* nextIdx, uint8_t* currIdx);
+                        int nextIdx, int currIdx);
         // Getters
         std::string getSchema() const;
 

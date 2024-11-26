@@ -139,13 +139,13 @@ class WasmParser extends FunctionFactory{
             // Generate temporary data parser since management of memory needs to be done manually.
             var schema = null;
             try {
-                this.DataParser.parseSchema(new TextDecoder().decode(charArray));
-                
-
+                var subschema = this.DataParser.parseHeader(new TextDecoder().decode(charArray), 0);
+                console.log("subschema: ", subschema);
                 // Final schema should have the header information separated into the component parts
                 schema = JSON.parse(this.DataParser.schema_readonly);
             } catch (error) {
                 console.error(error);
+                throw error;
             }
 
             return schema;
@@ -173,10 +173,8 @@ class WasmParser extends FunctionFactory{
             return;
         }
         if(useEmbind){
-            var instance = new this.wasmInstance.DataParser();
-            instance.parseSchema(new TextDecoder().decode(charArray));
-            var schema = JSON.parse(instance.schema_readonly);
-            instance.delete();
+            this.DataParser.parseSchema(new TextDecoder().decode(charArray));
+            var schema = JSON.parse(this.DataParser.schema_readonly);
             return schema;
         }
         // use WASM function to delimit pipe
@@ -202,7 +200,7 @@ class WasmParser extends FunctionFactory{
         if(!this.wasmInstance) {
             if(useEmbind){
                 this.wasmInstance = await EmbindModule();
-                this.DataParser = this.wasmInstance.DataParser;
+                this.DataParser = new this.wasmInstance.DataParser();
             }
             else
                 this.wasmInstance = await WasmModule();

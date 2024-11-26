@@ -61,35 +61,41 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
     // Need the string to be represented as a uint8_t for parsing specific points in the data like delimiters
     // and XML tags
     auto const arrPtr = reinterpret_cast<const uint8_t*>(&arr[0]);
-    uint8_t* currPtr;
-    uint8_t* nextPtr;
+    int currIdx;
+    int nextIdx;
     std::string currPacketType = "";
     int currPacketSize = (100 > arr.size())? arr.size() : 100;
     std::string currPacketId="0";
-    currPtr = reinterpret_cast<uint8_t*>(&arr[0]);
-    while(currPtr < arrPtr+arr.size()){
-        nextPtr = currPtr + currPacketSize;
-    
-        auto valueStream = arr.substr(*currPtr, *nextPtr);
-        // console.log(valueStream)
+    currIdx = 0;
 
-        json info = addToHeader(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextPtr, currPtr);
+    while(currIdx < arr.size()){
+        nextIdx = currIdx + currPacketSize -1;
+
+
+        auto valueStream = arr.substr(currIdx, nextIdx);
+
+        json info = addToHeader(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
         // Move to next split
-        if(info["breakout"])
+        if(info.contains("breakout"))
             break;
+
         currPacketType = info["currPacketType"];
         currPacketId = info["currPacketId"];
         currPacketSize = info["currPacketSize"];
-        currPtr = currPtr+(int)info["nextIdx"];
+        currIdx = (int)info["nextIdx"];
         step = step + 1;
+
+
     }
-    return arr.substr(*currPtr, *arrPtr+arr.size());
+
+    this->step = step;
+    return arr.substr(currIdx, arr.size());
 }
 
 json DataParser::addToHeader(std::string content, std::string valueStream, 
                         unsigned int currPacketSize, std::string currPacketType, 
                         std::string currPacketId, unsigned int step, 
-                        uint8_t* nextIdx, uint8_t* currIdx){
+                        int nextIdx, int currIdx){
     // This is the function that will be called to add the current packet to the header
 
     // Regex setup to not have inline regex
@@ -106,24 +112,25 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
     // used in the actual data stream
     if(step%2 == 0){
         json packetInfo = delimitPipeJson(reinterpret_cast<const char*>(&valueStream[0]), valueStream.size());
+
         currPacketSize = packetInfo["pkgSize"];
         currPacketType = packetInfo["pkgType"];
         currPacketId = packetInfo["pkgId"];
         if(std::regex_match(currPacketType, baseMatch, streamRegex)){
-            streamHeader = {"stream", schema["stream"]};
+            streamHeader = {{"stream", schema["stream"]}};
         }
         else if(std::regex_match(currPacketType, baseMatch, datasetRegex))
         {
-            streams[currPacketId]= {"dataset", schema["dataset"]};
+            streams[currPacketId]= {{"dataset", schema["dataset"]}};
             staticKeys[currPacketId]=vector<string>();
             coordsys[currPacketId] = {};
         }
         else if(std::regex_match(currPacketType, baseMatch, commentRegex)){
-            streams[currPacketId]= {"comment", schema["comment"]};
+            streams[currPacketId]= {{"comment", schema["comment"]}};
             coordsys[currPacketId] = {};
         }
         else if(std::regex_match(currPacketType, baseMatch, exceptionRegex)){
-            streams[currPacketId] = {"exception", schema["exception"]};
+            streams[currPacketId] = {{"exception", schema["exception"]}};
             coordsys[currPacketId] = {};
         }
         else if(std::regex_match(currPacketType, baseMatch, dataRegex))
@@ -135,7 +142,7 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
                 {"breakout", true},
             };
 
-        nextIdx = packetInfo["nextIdx"]+currIdx;
+        nextIdx = (int)packetInfo["nextIdx"]+currIdx;
     }else {
         if(std::regex_match(currPacketType, baseMatch, dataRegex))
             return {
@@ -156,9 +163,7 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
         pugi::xml_document contextXML;
         pugi::xml_parse_result result = contextXML.load_buffer_inplace(buffer, valueStream.size());
         pugi::xml_node root = contextXML.document_element();
-        std::string name(root.name());
-        auto schemaChildElement = findElement(schema, name);
-        fillElement(schemaChildElement, root);
+
         if(std::regex_match(currPacketType, baseMatch, streamRegex)){
             recursiveBuild(streamHeader, contextXML, currPacketId);
         }else if(std::regex_match(currPacketType, baseMatch, datasetRegex)){
@@ -178,19 +183,22 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
         {"currPacketType", currPacketType}, 
         {"nextIdx", (int)nextIdx},
     };
+
     return output;
 }  
 
 void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string packetId){
     auto idx = 0;
     size_t numberOfChildren = std::distance(xml.children().begin(), xml.children().end());
-
     for(pugi::xml_node child = xml.first_child(); child; child = child.next_sibling()){
 
         if(!child.name()) continue;
+
         std::string childName(child.name());
+
         auto schemaChildElement = findElement(schema, childName);
         fillElement(schemaChildElement, child);
+
         if(childName.find("coord") != std::string::npos || (childName == "data")){
             // Extended to maintain different coordsys for each stream
             auto currentName = "";
@@ -211,8 +219,8 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
             coordsys[packetId][childName][currentName] = child.children("vector").empty() || coordsys[packetId][childName][currentName];
         }
         // Build out choice elements  if possible
-        if(schemaChildElement["choice"]){
-            if(typeid(schemaChildElement["choice"]) == typeid(json::array_t)){
+        if(schemaChildElement.contains("choice")){
+            if(schemaChildElement["choice"].is_array()){
                 if(schemaChildElement["choice"].size() < numberOfChildren - std::distance(xml.children("properties").begin(), xml.children("properties").end())){
                     schemaChildElement["choice"].push_back(schemaChildElement["choice"][idx]);
                 }
@@ -224,12 +232,13 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
             }
         }else{
             // build out sibling elements or single elements if not an array
-            if(typeid(schemaChildElement["elements"]) == typeid(json::array_t)) 
+            if(schemaChildElement["elements"].is_array()) {
                 recursiveBuild(schemaChildElement["elements"][(int)((int)schemaChildElement["occurs"]-1)], child, packetId);
-            else 
+            }
+            else {
                 recursiveBuild(schemaChildElement["elements"], child, packetId);
+            }
         }
-
     }
     
 }

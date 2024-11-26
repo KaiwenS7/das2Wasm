@@ -1,7 +1,7 @@
 // sum.test.js
 import {  test,  expectTypeOf, expect } from 'vitest'
 import * as funcParser from "../src/parser/ParserFunctionInjector"
-import streamHeader from './data/stream.xml?raw'
+import streamHeader from './data/fullHeader.xml?raw'
 import schema from './data/schema.txt?raw'
 
 
@@ -38,12 +38,13 @@ test('Test parsing JSON object schema' , async () => {
   expect(schem).toEqual(JSON.parse(schema));
 })
 
-test.skip('Test parsing of an xml header strea' , async () => {
+test('Test parsing of an xml header strea' , async () => {
   var instance = funcParser.WasmParser.instance
   await instance.init();
+  var val=Uint8Array.from(schema.split('').map((c:string) => c.charCodeAt(0)))
 
-  var val=Uint8Array.from(streamHeader.split('').map((c:string) => c.charCodeAt(0)))
-
-  instance.parseHeader(val);
-
+  instance.parseSchema(val);
+  val=Uint8Array.from(streamHeader.split('').map((c:string) => c.charCodeAt(0)))
+  var schem = instance.parseHeader(val);
+  console.log(schem);
 })

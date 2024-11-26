@@ -1,0 +1,101 @@
+|Sx||845|
+<stream version="3.0" type="das-basic-stream">
+  <properties>
+    <p name="Discipline">Space Physics>Magnetospheric Science</p>
+    <p name="Generated_by">The University of Iowa</p>
+    <p name="Mission_group">TRACERS</p>
+    <p name="Project">LWS>Living With a Star</p>
+    <p name="Rules_of_use">FIXME: Add URL to rules of use</p>
+    <p name="inst_Descriptor">MAGIC>MAGnetometers for Innovation and Capability</p>
+    <p name="inst_Instrument_type">Magnetic Fields (space)</p>
+    <p name="inst_PI_affiliation">The University of Iowa</p>
+    <p name="inst_PI_name">David Miles</p>
+    <p name="model_id">fm3</p>
+    <p name="model_label">FM-3</p>
+    <p name="model_title">Ring-Core Sensor, Filght Model HSK ID: 0x3</p>
+    <p name="yLabel">packets/min</p>
+    <p name="title">MAGIC - FM3 Coverage by Packet ID</p>
+  </properties>
+</stream>
+|Hx|1|2884|
+<dataset name="magic_fm3_coverage" plot="cartesian2d" rank="1" index="*">
+  <coord axis="x" physDim="time" >
+    <properties><p name="label">UTC</p></properties>
+    <scalar use="center" valType="datetime" index="*" units="TT2000">
+      <packet numItems="1" itemBytes="8" encoding="LEint" />
+    </scalar>
+  </coord>
+  <data name="total" physDim="rate" >
+    <properties>
+      <p name="label">Total Rate</p>
+      <p name="info">Total rate for all packets/min - MAGIC packets</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x201" physDim="rate" >
+    <properties>
+      <p name="label">0x201 Rate</p>
+      <p name="info">Housekeeping</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x202" physDim="rate" >
+    <properties>
+      <p name="label">0x202 Rate</p>
+      <p name="info">DC Mag 3-Vectors at 128 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x203" physDim="rate" >
+    <properties>
+      <p name="label">0x203 Rate</p>
+      <p name="info">DC Mag 3-Vectors at 16 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x204" physDim="rate" >
+    <properties>
+      <p name="label">0x204 Rate</p>
+      <p name="info">Slow Housekeeping</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x20f" physDim="rate" >
+    <properties>
+      <p name="label">0x20f Rate</p>
+      <p name="info">Raw Frames at 128 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x212" physDim="rate" >
+    <properties>
+      <p name="label">0x212 Rate</p>
+      <p name="info">DC Mag 3-Vectors at 128 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+  <data name="num_x213" physDim="rate" >
+    <properties>
+      <p name="label">0x213 Rate</p>
+      <p name="info">DC Mag 3-Vectors at 16 Hz</p>
+    </properties>
+    <scalar use="center" valType="int" index="*" units="packets/min" >
+      <packet numItems="1" itemBytes="4" encoding="LEint" />
+    </scalar>
+  </data>
+</dataset>
+|Pd|1|40|
