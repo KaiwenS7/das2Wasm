@@ -170,7 +170,6 @@ class SchemaParser{
 
         }
         return returnVal
-        //throw `Element "${elementName}" not found`   
     }
 
     static fillElement(element, refXml, debug=false){

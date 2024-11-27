@@ -35,9 +35,7 @@ class DataParser{
 
   getParserState(){
     return {schema: this.schema, xsdCoord: this.xsdCoord, coordsys: this.coordsys,
-            staticKeys: this.staticKeys, streams: this.streams, streamHeader: this.streamHeader,
-
-          }
+            staticKeys: this.staticKeys, streams: this.streams, streamHeader: this.streamHeader,}
   }
 
   recursiveBuild(schema, xml, packetId, debug=false){

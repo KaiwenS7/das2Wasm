@@ -48,5 +48,9 @@ test('Test parsing of an xml header strea' , async () => {
   var schem = instance.parseHeader(val);
   console.log("Schema attributes: ", schem.stream.attributes);
   expect(schem.stream.attributes.version).toEqual("3.0");
-  console.log("Schema stream: ", schem.stream.elements.properties.elements[0].p.value);
+  
+  // Right now, p.value has a bunch of duplicates for each element
+  // TODO: Fix by looking at C++ code for fillElement and updateElement potentially
+  // causing an overlap of functionality due to using reference values
+  //console.log("Schema stream: ", schem.stream.elements.properties.elements[0].p.value);
 })

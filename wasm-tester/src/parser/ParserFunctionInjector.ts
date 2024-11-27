@@ -1,15 +1,17 @@
+import DataParser from "./DataParser.js";
 import WasmModule from "./Das2Wasm.mjs";
 import EmbindModule from "./Das2WasmEmbind.mjs";
 
 const useEmbind = true;
 abstract class FunctionFactory{
-    protected DataParser: any = null;
+    protected dataParserInstance: any = null;
 
     // Function to parse packet headers formatted |x|y|z|
     // Due to the dynamic size of x, y, and z, these have to found instead of assumed
     public abstract delimitPipe(valueStream:Uint8Array):parser.packetInfo;
     public abstract parseHeader(valueStream:Uint8Array):void;
     public abstract parseSchema(valueStream:Uint8Array):void;
+    public abstract parseData(valueStream:Uint8Array, options:any):void;
 
     protected constructor(){}
     protected static _instance:FunctionFactory;
@@ -32,7 +34,11 @@ abstract class FunctionFactory{
 }
 
 class JsParser extends FunctionFactory{
-    private constructor(){super();}
+    private iterator: any;
+
+    private constructor(){
+        super();
+    }
 
     // Function to parse packet headers formatted |x|y|z|
     // Due to the dynamic size of x, y, and z, these have to found instead of assumed
@@ -71,11 +77,62 @@ class JsParser extends FunctionFactory{
     }
 
     parseHeader(valueStream: Uint8Array): void {
-        throw new Error("Method not implemented.");
+        var step = 0;
+        var data = valueStream;
+        // console.log("Data: ", data);
+
+        // if(data instanceof Blob)
+        //     data = await data.arrayBuffer();
+
+        var dataParser = this.dataParserInstance
+
+        let temp = dataParser.parseStreamHeader(data, step);
     }
 
     parseSchema(valueStream: Uint8Array): void {
-        throw new Error("Method not implemented.");
+        var data = new TextDecoder().decode(valueStream);
+        this.dataParserInstance = new DataParser(JSON.parse(data));
+    }
+
+    parseData(valueStream: Uint8Array, options:any): void {
+        console.log("Data Received by injector")
+        this.dataParserInstance =new DataParser(options.schema,options.xsdCoord, options.coordsys, options.staticKeys, options.streams);
+        var dp = this.dataParserInstance;
+
+        this.iterator= (options.startingPckSize)? 
+                this.dataParserInstance.byteParser(valueStream, options.step, options.startingPckSize): 
+                this.dataParserInstance.byteParser(valueStream, options.step);
+        var it = this.iterator;
+        var data:any = {};
+        var val;
+        while(true){
+            try {
+                val = it.next();
+                if(val.done){
+                    it = null;
+                    break;
+                }
+                
+                if(!data[val.value.currPacketId]){
+                    data[val.value.currPacketId] = {};
+                    for(let key of Object.keys(val.value.dataProps)){
+                        data[val.value.currPacketId][key] = [];
+                    }            
+                }
+                // Go through all values to update current data state
+                for(let [key, value] of Object.entries(val.value.dataProps)){
+                    if(dp.staticKeys[val.value.currPacketId].includes(key) && (!dp.staticKeys[val.value.currPacketId].includes(key) || data[val.value.currPacketId][key].length <= 0))
+                        data[val.value.currPacketId][key] = value;
+                        
+                    else if(!dp.staticKeys[val.value.currPacketId].includes(key))
+                        data[val.value.currPacketId][key] = data[val.value.currPacketId][key].concat(value);
+                }
+                
+            } catch (error) {
+                // Passes error to on-error handler for main thread
+                throw error;
+            }
+        }
     }
 
     public static override get instance():FunctionFactory{
@@ -139,9 +196,9 @@ class WasmParser extends FunctionFactory{
             // Generate temporary data parser since management of memory needs to be done manually.
             var schema = null;
             try {
-                var subschema = this.DataParser.parseHeader(new TextDecoder().decode(charArray), 0);
+                var subschema = this.dataParserInstance.parseHeader(new TextDecoder().decode(charArray), 0);
                 // Final schema should have the header information separated into the component parts
-                schema = JSON.parse(this.DataParser.header_readonly);
+                schema = JSON.parse(this.dataParserInstance.header_readonly);
             } catch (error) {
                 console.error(error);
                 throw error;
@@ -172,8 +229,8 @@ class WasmParser extends FunctionFactory{
             return;
         }
         if(useEmbind){
-            this.DataParser.parseSchema(new TextDecoder().decode(charArray));
-            var schema = JSON.parse(this.DataParser.schema_readonly);
+            this.dataParserInstance.parseSchema(new TextDecoder().decode(charArray));
+            var schema = JSON.parse(this.dataParserInstance.schema_readonly);
             return schema;
         }
         // use WASM function to delimit pipe
@@ -195,11 +252,15 @@ class WasmParser extends FunctionFactory{
 
     }
 
+    parseData(valueStream: Uint8Array, options:any): void {
+        throw new Error("Method not implemented.");
+    }
+
     override async init(){
         if(!this.wasmInstance) {
             if(useEmbind){
                 this.wasmInstance = await EmbindModule();
-                this.DataParser = new this.wasmInstance.DataParser();
+                this.dataParserInstance = new this.wasmInstance.DataParser();
             }
             else
                 this.wasmInstance = await WasmModule();
@@ -207,9 +268,9 @@ class WasmParser extends FunctionFactory{
     }
 
     destroy(){
-        if(this.DataParser){
-            this.DataParser.delete();
-            this.DataParser = null;
+        if(this.dataParserInstance){
+            this.dataParserInstance.delete();
+            this.dataParserInstance = null;
         }
     }
 
