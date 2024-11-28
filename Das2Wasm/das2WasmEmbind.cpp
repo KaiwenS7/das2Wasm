@@ -87,7 +87,6 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
 
 
     }
-
     schema["stream"].update(streamHeader);
 
     this->step = step;
@@ -166,6 +165,8 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
         pugi::xml_parse_result result = contextXML.load_buffer_inplace(buffer, valueStream.size());
         pugi::xml_node root = contextXML.document_element();
 
+        // cout << "XML Parse Result: " << result.description() << endl;
+
         if(std::regex_match(currPacketType, baseMatch, streamRegex)){
             recursiveBuild(streamHeader, contextXML, currPacketId);
         }else if(std::regex_match(currPacketType, baseMatch, datasetRegex)){
@@ -192,9 +193,26 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
 void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string packetId){
     auto idx = 0;
     size_t numberOfChildren = std::distance(xml.children().begin(), xml.children().end());
-    for(pugi::xml_node child = xml.first_child(); child; child = child.next_sibling()){
+    // if(numberOfChildren == 0){
+    //     return;
+    // }else if(numberOfChildren > 0){
+    //     cout << "Number of Children: " << numberOfChildren << endl;
+    //     for(pugi::xml_node child = xml.first_child(); child; child = child.next_sibling()){
+    //         cout << "Child Name: " << child.name() << endl;
+    //         cout << "Child Attribute: " << child.attribute("name").value() << endl;
+    //         cout << "Child Value: " << child.child_value() << endl;
+    //         cout << "Child Type: " << printNodeType(child) << endl;
 
-        if(!child.name()) continue;
+    //     }
+
+    // }
+
+    for(pugi::xml_node child = xml.first_child(); child; child = child.next_sibling()){
+        
+        if(child.type() == pugi::node_pcdata)
+        {
+            continue;
+        }
 
         std::string childName(child.name());
 
@@ -246,6 +264,39 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
 
     }
     
+}
+
+
+void DataParser::parseData(std::string arr){
+    // Need the string to be represented as a uint8_t for parsing specific points in the data like delimiters
+    // and XML tags
+    auto const arrPtr = reinterpret_cast<const uint8_t*>(&arr[0]);
+    int currIdx;
+    int nextIdx;
+    std::string currPacketType = "";
+    int currPacketSize = (100 > arr.size())? arr.size() : 100;
+    std::string currPacketId="0";
+    currIdx = 0;
+
+    while(currIdx < arr.size()){
+        nextIdx = currIdx + currPacketSize -1;
+
+        auto valueStream = arr.substr(currIdx, nextIdx);
+
+        json info = addToHeader(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
+        // Move to next split
+        if(info.contains("breakout"))
+            break;
+
+        currPacketType = info["currPacketType"];
+        currPacketId = info["currPacketId"];
+        currPacketSize = info["currPacketSize"];
+        currIdx = (int)info["nextIdx"];
+        step = step + 1;
+    }
+
+    schema["stream"].update(streamHeader);
+
 }
 
 std::string DataParser::getSchema() const {

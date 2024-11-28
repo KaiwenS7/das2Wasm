@@ -108,7 +108,8 @@ void fillElement(json& element, pugi::xml_node& xml){
             }
         }
     }
-
+    
+    string refName(xml.name());
     if(element.contains("value")){
         if(!occurs){
             element["value"] = xml.child_value();
@@ -116,8 +117,7 @@ void fillElement(json& element, pugi::xml_node& xml){
             element["value"].push_back(xml.child_value());
         }
     }
-    string refName(xml.name());
-    if(refName.find("values") > 0){
+    else if(refName.find("values") > 0){
         if(!occurs){
             element["value"] = xml.child_value();
         }else{
@@ -162,5 +162,20 @@ void updateSchema(json& root, json& elementToUpdate, std::string name){
 
             }
         }
+    }
+}
+
+std::string printNodeType(pugi::xml_node& node){
+    switch(node.type()){
+        case pugi::node_null: return "null";
+        case pugi::node_document: return "document";
+        case pugi::node_element: return "element";
+        case pugi::node_pcdata: return "pcdata";
+        case pugi::node_cdata: return "cdata";
+        case pugi::node_comment: return "comment";
+        case pugi::node_pi: return "pi";
+        case pugi::node_declaration: return "declaration";
+        case pugi::node_doctype: return "doctype";
+        default: return "unknown";
     }
 }
