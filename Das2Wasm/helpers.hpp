@@ -73,20 +73,21 @@ void printTree(pt::ptree &ptObject, int level)
 }
 
 json& findElement(json& schema, std::string name){
+    if(schema.is_array()) schema = schema[0];
+    
     bool found = !schema[name].is_null();
     if(found){
         return schema[name];
     }
-
     for(auto& element : schema.items()){
         if(!element.value()[name].is_null()){
             return element.value()[name];
         }
         else if(element.value()["elements"].is_array()){
-            return findElement(element.value()["elements"], name);
+            return findElement(element.value()["elements"][0], name);
         }
         else if(element.value()["choice"].is_array()){
-            return findElement(element.value()["choice"], name);
+            return findElement(element.value()["choice"][0], name);
         }
     }
     return schema;
@@ -108,7 +109,7 @@ void fillElement(json& element, pugi::xml_node& xml){
             }
         }
     }
-    
+
     string refName(xml.name());
     if(element.contains("value")){
         if(!occurs){

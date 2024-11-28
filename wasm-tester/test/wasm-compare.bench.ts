@@ -1,6 +1,8 @@
 import { bench, describe  } from 'vitest'
 import * as funcParser from "../src/parser/ParserFunctionInjector"
-import streamHeader from './data/fullHeaderLarge.xml?raw'
+import streamHeaderLarge from './data/fullHeaderLarge.xml?raw'
+import streamHeader from './data/fullHeader.xml?raw'
+
 import schema from './data/schema.txt?raw'
 
 

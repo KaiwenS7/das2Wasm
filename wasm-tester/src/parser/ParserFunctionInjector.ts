@@ -199,6 +199,7 @@ class WasmParser extends FunctionFactory{
                 var subschema = this.dataParserInstance.parseHeader(new TextDecoder().decode(charArray), 0);
                 // Final schema should have the header information separated into the component parts
                 schema = JSON.parse(this.dataParserInstance.header_readonly);
+                //console.log(this.dataParserInstance.streams_readonly);
             } catch (error) {
                 console.error(error);
                 throw error;

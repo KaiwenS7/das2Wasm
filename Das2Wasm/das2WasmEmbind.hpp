@@ -56,5 +56,7 @@ class DataParser{
         // Getters
         std::string getSchema() const;
         std::string getHeader() const;
+        std::string getStreams() const;
+        
 
 };

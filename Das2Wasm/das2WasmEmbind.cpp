@@ -48,7 +48,6 @@ json delimitPipeJson(const char* arr, int size){
         {"pkgId",  pkgId},
     };
 
-
     return packetInfoFull;
 
 }
@@ -67,27 +66,37 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
     int currPacketSize = (100 > arr.size())? arr.size() : 100;
     std::string currPacketId="0";
     currIdx = 0;
+    
+    // C++ Strings have a newline considered that doesn't actually get considered in generating the number of bytes
+    // in each of the packets. As such, they are removed in order to correctly line up the byte count
+    arr.erase(std::remove(arr.begin(), arr.end(), '\n'), arr.cend());
 
     while(currIdx < arr.size()){
-        nextIdx = currIdx + currPacketSize -1;
+        nextIdx = currIdx + currPacketSize;
+        // cout << "Next Index: " << nextIdx << endl;
 
-
-        auto valueStream = arr.substr(currIdx, nextIdx);
+        auto valueStream = arr.substr(currIdx, currPacketSize);
 
         json info = addToHeader(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
         // Move to next split
         if(info.contains("breakout"))
             break;
 
+        //cout << info << endl;
         currPacketType = info["currPacketType"];
         currPacketId = info["currPacketId"];
         currPacketSize = info["currPacketSize"];
         currIdx = (int)info["nextIdx"];
+        // cout << "Current Index: " << currIdx << endl;
+        // cout << "Packet Size: " << currPacketSize << endl;
+        // cout << "Packet Type: " << currPacketType << endl;
+        // cout << "Packet Id: " << currPacketId << endl;
         step = step + 1;
 
 
     }
     schema["stream"].update(streamHeader);
+    schema["dataset"].update(streams);
 
     this->step = step;
     return arr.substr(currIdx, arr.size());
@@ -111,12 +120,15 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
     // Even steps are where the pipe delimited stream information is parsed
     // Odd steps are where the XML data is parsed. Similar parsing rules are
     // used in the actual data stream
+    // cout << "step: " << step << endl;
+    // cout << "valueStream Size: " << valueStream.size() << endl;
     if(step%2 == 0){
         json packetInfo = delimitPipeJson(reinterpret_cast<const char*>(&valueStream[0]), valueStream.size());
 
         currPacketSize = packetInfo["pkgSize"];
         currPacketType = packetInfo["pkgType"];
         currPacketId = packetInfo["pkgId"];
+
         if(std::regex_match(currPacketType, baseMatch, streamRegex)){
             streamHeader = {{"stream", schema["stream"]}};
         }
@@ -177,16 +189,15 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
             recursiveBuild(streams[currPacketId], contextXML, currPacketId);
         }
         
-        currPacketSize = (100 > content.size() - (int)nextIdx)? content.size() : 100;
+        currPacketSize = (100 > (content.size() - (int)nextIdx))? content.size() : 100;
     }
-    
+
     json output = {
         {"currPacketSize", currPacketSize},
         {"currPacketId", currPacketId}, 
         {"currPacketType", currPacketType}, 
         {"nextIdx", (int)nextIdx},
     };
-
     return output;
 }  
 
@@ -206,7 +217,7 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
     //     }
 
     // }
-
+    
     for(pugi::xml_node child = xml.first_child(); child; child = child.next_sibling()){
         
         if(child.type() == pugi::node_pcdata)
@@ -215,10 +226,11 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
         }
 
         std::string childName(child.name());
-
-        auto schemaChildElement = findElement(schema, childName);
-        fillElement(schemaChildElement, child);
         
+        auto schemaChildElement = findElement(schema, childName);
+        
+        fillElement(schemaChildElement, child);
+
         if(childName.find("coord") != std::string::npos || (childName == "data")){
             // Extended to maintain different coordsys for each stream
             auto currentName = "";
@@ -232,12 +244,14 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
                     break;
                 }
             }
-
-            if(!coordsys[packetId][childName])
+            
+            if(coordsys[packetId][childName].is_null())
                 coordsys[packetId][childName] = {};
+
 
             coordsys[packetId][childName][currentName] = child.children("vector").empty() || coordsys[packetId][childName][currentName];
         }
+
         // Build out choice elements  if possible
         if(schemaChildElement.contains("choice")){
             if(schemaChildElement["choice"].is_array()){
@@ -250,7 +264,7 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
             else {
                 recursiveBuild(schemaChildElement["choice"], child, packetId);
             }
-        }else{
+        }else if(schemaChildElement.contains("elements")){
             // build out sibling elements or single elements if not an array
             if(schemaChildElement["elements"].is_array()) {
                 recursiveBuild(schemaChildElement["elements"][(int)((int)schemaChildElement["occurs"]-1)], child, packetId);
@@ -283,19 +297,24 @@ void DataParser::parseData(std::string arr){
 
         auto valueStream = arr.substr(currIdx, nextIdx);
 
-        json info = addToHeader(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
-        // Move to next split
-        if(info.contains("breakout"))
-            break;
+        if(step%2 == 0){
+            json info = addToHeader(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
+            // Move to next split
+            if(info.contains("breakout"))
+                break;
 
-        currPacketType = info["currPacketType"];
-        currPacketId = info["currPacketId"];
-        currPacketSize = info["currPacketSize"];
-        currIdx = (int)info["nextIdx"];
+            currPacketType = info["currPacketType"];
+            currPacketId = info["currPacketId"];
+            currPacketSize = info["currPacketSize"];
+            currIdx = (int)info["nextIdx"];
+
+        }else{
+            // Use the stream information to parse the data.
+            // Information should still be contained within the WASM class via stream[id].
+            
+        }
         step = step + 1;
     }
-
-    schema["stream"].update(streamHeader);
 
 }
 
@@ -305,7 +324,9 @@ std::string DataParser::getSchema() const {
 std::string DataParser::getHeader() const {
     return streamHeader.dump(-1, ' ', true);
 }
-
+std::string DataParser::getStreams() const {
+    return streams.dump(-1, ' ', true);
+}
 EMSCRIPTEN_BINDINGS(das2WasmEmbind){
     emscripten::function("delimitPipe", optional_override(
                            [](const std::string s){
@@ -317,6 +338,7 @@ EMSCRIPTEN_BINDINGS(das2WasmEmbind){
         .function("parseSchema", &DataParser::parseSchema)
         .function("parseHeader", &DataParser::parseHeader)
         .property("schema_readonly", &DataParser::getSchema)
+        .property("streams_readonly", &DataParser::getStreams)
         .property("header_readonly", &DataParser::getHeader);
 
 }
