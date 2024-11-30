@@ -56,14 +56,17 @@ void DataParser::parseSchema(std::string arr){
     schema = json::parse(arr);
 }
 
-std::string DataParser::parseHeader(std::string arr, unsigned int step){
+val DataParser::parseHeader(val jsObj, unsigned int step){
+    // cout << "Entering Parse Header WASM" << endl;
     // Need the string to be represented as a uint8_t for parsing specific points in the data like delimiters
     // and XML tags
-    auto const arrPtr = reinterpret_cast<const uint8_t*>(&arr[0]);
+    vector<unsigned char> tArray = emscripten::vecFromJSArray<unsigned char>(jsObj);
+    std::string arr;
+
     int currIdx;
     int nextIdx;
     std::string currPacketType = "";
-    int currPacketSize = (100 > arr.size())? arr.size() : 100;
+    int currPacketSize = (100 > tArray.size())? tArray.size() : 100;
     std::string currPacketId="0";
     currIdx = 0;
     
@@ -72,13 +75,12 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
     // For some reason, this only applied to test data, meaning real data will not have to deal with this
     //arr.erase(std::remove(arr.begin(), arr.end(), '\n'), arr.cend());
 
-    while(currIdx < arr.size()){
+    while(currIdx < tArray.size()){
         nextIdx = currIdx + currPacketSize;
-        // cout << "Next Index: " << nextIdx << endl;
+        cout << "Next Index: " << nextIdx << endl;
 
-        auto valueStream = arr.substr(currIdx, currPacketSize);
-
-        json info = parseAndAssign(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
+        arr.assign(tArray.begin() + currIdx, tArray.begin() + nextIdx);
+        json info = parseAndAssign(tArray, arr, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
         // Move to next split
         if(info.contains("breakout"))
         {
@@ -102,15 +104,15 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
     schema["dataset"].update(streams);
 
     this->step = step;
-    return arr.substr(currIdx, arr.size()-currIdx);
+    vector<unsigned char> remainingData(tArray.begin() + currIdx, tArray.end());
+    return emscripten::val(emscripten::typed_memory_view(remainingData.size(), remainingData.data()));
 }
 
-json DataParser::parseAndAssign(std::string content, std::string valueStream, 
+json DataParser::parseAndAssign(vector<unsigned char> & content, std::string & valueStream, 
                         unsigned int currPacketSize, std::string currPacketType, 
                         std::string currPacketId, unsigned int step, 
                         int nextIdx, int currIdx){
     // This is the function that will be called to add the current packet to the header
-
     // Regex setup to not have inline regex
     std::regex streamRegex("Sx");
     std::regex datasetRegex("Hx");
@@ -139,15 +141,15 @@ json DataParser::parseAndAssign(std::string content, std::string valueStream,
         {
             streams[currPacketId]= {{"dataset", schema["dataset"]}};
             staticKeys[currPacketId]=vector<string>();
-            coordsys[currPacketId] = {};
+            coordsys[currPacketId] = json::object();
         }
         else if(std::regex_match(currPacketType, baseMatch, commentRegex)){
             streams[currPacketId]= {{"comment", schema["comment"]}};
-            coordsys[currPacketId] = {};
+            coordsys[currPacketId] = json::object();
         }
         else if(std::regex_match(currPacketType, baseMatch, exceptionRegex)){
             streams[currPacketId] = {{"exception", schema["exception"]}};
-            coordsys[currPacketId] = {};
+            coordsys[currPacketId] = json::object();
         }
         else if(std::regex_match(currPacketType, baseMatch, dataRegex)){
             return {
@@ -168,7 +170,6 @@ json DataParser::parseAndAssign(std::string content, std::string valueStream,
             };
         }
         nextIdx = (int)packetInfo["nextIdx"]+currIdx;
-
         
     }else {
         if(std::regex_match(currPacketType, baseMatch, dataRegex))
@@ -260,7 +261,7 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
             }
             
             if(coordsys[packetId][childName].is_null())
-                coordsys[packetId][childName] = {};
+                coordsys[packetId][childName] = json::object();
 
 
             coordsys[packetId][childName][currentName] = child.children("vector").empty() || coordsys[packetId][childName][currentName];
@@ -298,19 +299,9 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
 void DataParser::parseData(val jsObj){
     // C++ Strings have a newline considered that doesn't actually get considered in generating the number of bytes
     // in each of the packets. As such, they are removed in order to correctly line up the byte count
-    vector<char> tArray = emscripten::convertJSArrayToNumberVector<char>(jsObj);
-
-    int pckIdx = -1;
-    // Finds the delimiters within the array data to parse the information inbetween each.
-    // Das3 will always have 4 delimiters pipes in the data
-    for (int i = 0; i < 13300; ++i) {
-        if((unsigned int)tArray[i] == 124){
-            cout << "Pipe Found at: " << i << endl;
-        }
-    }
+    vector<unsigned char> tArray = emscripten::vecFromJSArray<unsigned char>(jsObj);
     // Need the string to be represented as a uint8_t for parsing specific points in the data like delimiters
     // and XML tags
-
     int currIdx;
     int nextIdx;
     std::string currPacketType = "";
@@ -318,33 +309,49 @@ void DataParser::parseData(val jsObj){
     std::string currPacketId="0";
     currIdx = 0;
 
-    cout << "Array Size: " << tArray.size() << endl;
+
+    json info;
+    data = {{"time_ref", vector<uint64_t>()}, {"data_center", vector<float>()}};
     while(currIdx < tArray.size()){
         nextIdx = currIdx + currPacketSize;
-        cout << "Current Index: " << currIdx << endl;
-        cout << "Next Index: " << nextIdx << endl;
+
         // Use the stream information to parse the data.
         // Information should still be contained within the WASM class via stream[id].
-        // json info = parseAndAssign(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
-        json info;
         if(step%2 == 0){
-            //arr.assign(tArray.begin() + currIdx, tArray.begin() + nextIdx);
-            //cout << arr << endl;
             info = delimitPipeJson(reinterpret_cast<const char*>(&tArray[currIdx]), currPacketSize);
-            cout << info << endl;
             currPacketType = info["pkgType"];
             currPacketId = info["pkgId"];
             currPacketSize = info["pkgSize"];
-            currIdx = (int)info["nextIdx"];
+            // Since the delimiter function gets the info assuming it starts from the 0 index,
+            // the real current index is needed to be added as an offset
+            currIdx = (int)info["nextIdx"] + currIdx;
         }else{
+            // TODO: Parse data by putting the data into formatted data structures
+            data["time_ref"].push_back( (uint64_t)tArray[currIdx] << 8*7 | 
+                                        (uint64_t)tArray[currIdx+1] << 8*6 | 
+                                        (uint64_t)tArray[currIdx+2] << 8*5 | 
+                                        (uint64_t)tArray[currIdx+3] << 8*4 | 
+                                        (uint64_t)tArray[currIdx+4] << 8*3 | 
+                                        (uint64_t)tArray[currIdx+5] << 8*2 | 
+                                        (uint64_t)tArray[currIdx+6] << 8 | 
+                                        (uint64_t)tArray[currIdx+7]);            
+            for(int i = 8; i < currPacketSize; i+=4){
+                data["data_center"].push_back(tArray[currIdx+i] << 3*8 | 
+                                              tArray[currIdx+i+1] << 2*8 | 
+                                              tArray[currIdx+i+2] << 8 | 
+                                              tArray[currIdx+i+3]);
+
+            }
+
+
             currIdx = nextIdx;
             currPacketSize = (100 > (tArray.size() - (int)nextIdx))? tArray.size() : 100;
         }
 
-        cout << step << endl;
+        // Step causes a memory leak in the case of infinite loops
+        // Yeah that makes sense oops.
         step = step + 1;
     }
-
 }
 
 
@@ -358,6 +365,28 @@ std::string DataParser::getHeader() const {
 std::string DataParser::getStreams() const {
     return streams.dump(-1, ' ', true);
 }
+std::string DataParser::getCoordsys() const {
+    return coordsys.dump(-1, ' ', true);
+}
+std::string DataParser::getStaticKeys() const{
+    return staticKeys.dump(-1, ' ', true);
+}
+
+val DataParser::getData(std::string id) const {
+    if(id.find("data") != std::string::npos){
+        vector<float> dataCenter = data["data_center"];
+        cout << dataCenter[0] << endl;
+        return emscripten::val(emscripten::typed_memory_view(dataCenter.size(), dataCenter.data()));
+    }else if(id.find("time_ref") != std::string::npos){
+        vector<uint64_t> timeRef = data["time_ref"];
+        cout << timeRef[0] << endl;
+        return emscripten::val(emscripten::typed_memory_view(timeRef.size(), timeRef.data()));
+    }
+
+    return emscripten::val();
+    
+}
+
 EMSCRIPTEN_BINDINGS(das2WasmEmbind){
     emscripten::function("delimitPipe", optional_override(
                            [](const std::string s){
@@ -371,6 +400,9 @@ EMSCRIPTEN_BINDINGS(das2WasmEmbind){
         .function("parseData", &DataParser::parseData)
         .property("schema_readonly", &DataParser::getSchema)
         .property("streams_readonly", &DataParser::getStreams)
-        .property("header_readonly", &DataParser::getHeader);
+        .property("header_readonly", &DataParser::getHeader)
+        .property("coordsys_readonly", &DataParser::getCoordsys)
+        .property("staticKeys_readonly", &DataParser::getStaticKeys)
+        .function("getData", &DataParser::getData);
 
 }

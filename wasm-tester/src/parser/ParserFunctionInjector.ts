@@ -9,9 +9,10 @@ abstract class FunctionFactory{
     // Function to parse packet headers formatted |x|y|z|
     // Due to the dynamic size of x, y, and z, these have to found instead of assumed
     public abstract delimitPipe(valueStream:Uint8Array):parser.packetInfo;
-    public abstract parseHeader(valueStream:Uint8Array):string;
+    public abstract parseHeader(valueStream:Uint8Array):Uint8Array;
     public abstract parseSchema(valueStream:Uint8Array):void;
     public abstract parseData(valueStream:Uint8Array, options:any):void;
+    public abstract getInfo():any;
 
     protected constructor(){}
     protected static _instance:FunctionFactory;
@@ -38,6 +39,10 @@ class JsParser extends FunctionFactory{
 
     private constructor(){
         super();
+    }
+
+    public getInfo() {
+        return{};
     }
 
     // Function to parse packet headers formatted |x|y|z|
@@ -76,7 +81,7 @@ class JsParser extends FunctionFactory{
         return packetInfoFull;
     }
 
-    parseHeader(valueStream: Uint8Array): string {
+    parseHeader(valueStream: Uint8Array): Uint8Array {
         var step = 0;
         var data = valueStream;
         // console.log("Data: ", data);
@@ -97,7 +102,12 @@ class JsParser extends FunctionFactory{
 
     parseData(valueStream: Uint8Array, options:any): void {
         console.log("Data Received by injector")
-        this.dataParserInstance =new DataParser(options.schema,options.xsdCoord, options.coordsys, options.staticKeys, options.streams);
+        console.log(this.dataParserInstance);
+        if(options["schema"]){
+            this.dataParserInstance =new DataParser(options.schema, options.xsdCoord, options.coordsys, options.staticKeys, options.streams);
+        }else{
+            options = this.dataParserInstance.getParserState();
+        }
         var dp = this.dataParserInstance;
 
         this.iterator= (options.startingPckSize)? 
@@ -109,6 +119,7 @@ class JsParser extends FunctionFactory{
         while(true){
             try {
                 val = it.next();
+                console.log(val);
                 if(val.done){
                     it = null;
                     break;
@@ -134,6 +145,7 @@ class JsParser extends FunctionFactory{
                 throw error;
             }
         }
+        console.log(data);
     }
 
     public static override get instance():FunctionFactory{
@@ -189,15 +201,16 @@ class WasmParser extends FunctionFactory{
         return jsonFromCpp;
     }
 
-    parseHeader(charArray: Uint8Array): string {
+    parseHeader(charArray: Uint8Array): Uint8Array {
         if(!this.wasmInstance){
-            return "";
+            return new Uint8Array();
         }
         if(useEmbind){
             // Generate temporary data parser since management of memory needs to be done manually.
             var schema = null;
             try {
-                schema = this.dataParserInstance.parseHeader(new TextDecoder().decode(charArray), 0);
+                console.log("Parsing header");
+                schema = this.dataParserInstance.parseHeader(charArray, 0);
                 // Final schema should have the header information separated into the component parts
                 //console.log(this.dataParserInstance.streams_readonly);
                 return schema
@@ -223,7 +236,7 @@ class WasmParser extends FunctionFactory{
             this.wasmInstance._free(heapPointer);
             throw error;
         }
-        return "";
+        return new Uint8Array();
     }
 
     parseSchema(charArray: Uint8Array): void {
@@ -257,6 +270,22 @@ class WasmParser extends FunctionFactory{
     parseData(valueStream: Uint8Array, options:any): void {
         if(useEmbind){
             this.dataParserInstance.parseData(valueStream);
+            var a = this.dataParserInstance.getData("data_center");
+            var b = this.dataParserInstance.getData("time_ref");
+            console.log(a.length);
+            console.log(b.length);
+        }
+    }
+
+    getInfo(){
+        if(useEmbind){
+            return {
+                "header": JSON.parse(this.dataParserInstance.header_readonly), 
+                "streams": JSON.parse(this.dataParserInstance.streams_readonly),
+                "coordsys": this.dataParserInstance.coordsys_readonly,
+                "staticKeys": this.dataParserInstance.staticKeys_readonly,
+                "schema": JSON.parse(this.dataParserInstance.schema_readonly),
+            };
         }
     }
 

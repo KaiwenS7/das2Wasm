@@ -18,7 +18,7 @@ function readFileAsync(file) {
   
 class DataParser{
 
-  constructor(schema, xsdCoord=true, coordsys={}, staticKeys={}, streams={}, streamHeader=null, funcInjection=FunctionInjector.JsParser, debug=false){
+  constructor(schema, xsdCoord=true, coordsys={}, staticKeys={}, streams={}, streamHeader=null, funcInjection=FunctionInjector.JsParser, debug=true){
     this.schema = schema;
     this.streamHeader = streamHeader;
     this.coordsys = coordsys;
@@ -256,6 +256,7 @@ class DataParser{
           }
 
         }else {
+          yield this.parseData(dataProps, content, currPacketSize, currIdx, currPacketId);
           currPacketSize = 100;
           
         } // Else

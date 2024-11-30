@@ -35,7 +35,7 @@ class DataParser{
         json staticKeys;
         json coordsys;
 
-        val data;
+        json data;
 
         unsigned int step = 0;
 
@@ -50,8 +50,8 @@ class DataParser{
 
         // In order to keep with the original JS code, this needs to send back
         // the current "step" and the remaining contents of the data blob
-        std::string parseHeader(std::string arr, unsigned int step = 0);
-        json parseAndAssign(std::string content, std::string valueStream, 
+        val parseHeader(val arr, unsigned int step = 0);
+        json parseAndAssign(vector<unsigned char> & content, std::string & valueStream, 
                         unsigned int currPacketSize, std::string currPacketType, 
                         std::string currPacketId, unsigned int step, 
                         int nextIdx, int currIdx);
@@ -59,6 +59,9 @@ class DataParser{
         std::string getSchema() const;
         std::string getHeader() const;
         std::string getStreams() const;
-
+        std::string getCoordsys() const;
+        std::string getStaticKeys() const;
+        
+        emscripten::val getData(std::string id) const;
 
 };
