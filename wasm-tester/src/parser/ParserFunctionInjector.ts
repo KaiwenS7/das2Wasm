@@ -9,7 +9,7 @@ abstract class FunctionFactory{
     // Function to parse packet headers formatted |x|y|z|
     // Due to the dynamic size of x, y, and z, these have to found instead of assumed
     public abstract delimitPipe(valueStream:Uint8Array):parser.packetInfo;
-    public abstract parseHeader(valueStream:Uint8Array):void;
+    public abstract parseHeader(valueStream:Uint8Array):string;
     public abstract parseSchema(valueStream:Uint8Array):void;
     public abstract parseData(valueStream:Uint8Array, options:any):void;
 
@@ -76,7 +76,7 @@ class JsParser extends FunctionFactory{
         return packetInfoFull;
     }
 
-    parseHeader(valueStream: Uint8Array): void {
+    parseHeader(valueStream: Uint8Array): string {
         var step = 0;
         var data = valueStream;
         // console.log("Data: ", data);
@@ -87,6 +87,7 @@ class JsParser extends FunctionFactory{
         var dataParser = this.dataParserInstance
 
         let temp = dataParser.parseStreamHeader(data, step);
+        return temp;
     }
 
     parseSchema(valueStream: Uint8Array): void {
@@ -188,24 +189,23 @@ class WasmParser extends FunctionFactory{
         return jsonFromCpp;
     }
 
-    parseHeader(charArray: Uint8Array): void {
+    parseHeader(charArray: Uint8Array): string {
         if(!this.wasmInstance){
-            return;
+            return "";
         }
         if(useEmbind){
             // Generate temporary data parser since management of memory needs to be done manually.
             var schema = null;
             try {
-                var subschema = this.dataParserInstance.parseHeader(new TextDecoder().decode(charArray), 0);
+                schema = this.dataParserInstance.parseHeader(new TextDecoder().decode(charArray), 0);
                 // Final schema should have the header information separated into the component parts
-                schema = JSON.parse(this.dataParserInstance.header_readonly);
                 //console.log(this.dataParserInstance.streams_readonly);
+                return schema
             } catch (error) {
                 console.error(error);
                 throw error;
             }
 
-            return schema;
         }
         // use WASM function to delimit pipe
         const type = WasmParser.TYPES.u8;
@@ -223,6 +223,7 @@ class WasmParser extends FunctionFactory{
             this.wasmInstance._free(heapPointer);
             throw error;
         }
+        return "";
     }
 
     parseSchema(charArray: Uint8Array): void {
@@ -254,7 +255,9 @@ class WasmParser extends FunctionFactory{
     }
 
     parseData(valueStream: Uint8Array, options:any): void {
-        throw new Error("Method not implemented.");
+        if(useEmbind){
+            this.dataParserInstance.parseData(valueStream);
+        }
     }
 
     override async init(){

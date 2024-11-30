@@ -25,7 +25,7 @@ using json = nlohmann::json;
 
 std::string delimitPipe(const char* arr, int size);
 json delimitPipeJson(const char* arr, int size);
- 
+
 class DataParser{
     private:
         // Member Variables
@@ -35,6 +35,8 @@ class DataParser{
         json staticKeys;
         json coordsys;
 
+        val data;
+
         unsigned int step = 0;
 
         void recursiveBuild(json& schema, pugi::xml_node& xml, std::string packetId);
@@ -43,13 +45,13 @@ class DataParser{
         DataParser(){};
 
         // Member Functions
-        void parseData(std::string arr);
+        void parseData(emscripten::val arr);
         void parseSchema(std::string arr);
 
         // In order to keep with the original JS code, this needs to send back
         // the current "step" and the remaining contents of the data blob
         std::string parseHeader(std::string arr, unsigned int step = 0);
-        json addToHeader(std::string content, std::string valueStream, 
+        json parseAndAssign(std::string content, std::string valueStream, 
                         unsigned int currPacketSize, std::string currPacketType, 
                         std::string currPacketId, unsigned int step, 
                         int nextIdx, int currIdx);
@@ -57,6 +59,6 @@ class DataParser{
         std::string getSchema() const;
         std::string getHeader() const;
         std::string getStreams() const;
-        
+
 
 };

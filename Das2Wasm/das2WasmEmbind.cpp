@@ -69,7 +69,8 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
     
     // C++ Strings have a newline considered that doesn't actually get considered in generating the number of bytes
     // in each of the packets. As such, they are removed in order to correctly line up the byte count
-    arr.erase(std::remove(arr.begin(), arr.end(), '\n'), arr.cend());
+    // For some reason, this only applied to test data, meaning real data will not have to deal with this
+    //arr.erase(std::remove(arr.begin(), arr.end(), '\n'), arr.cend());
 
     while(currIdx < arr.size()){
         nextIdx = currIdx + currPacketSize;
@@ -77,10 +78,12 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
 
         auto valueStream = arr.substr(currIdx, currPacketSize);
 
-        json info = addToHeader(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
+        json info = parseAndAssign(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
         // Move to next split
         if(info.contains("breakout"))
+        {
             break;
+        }
 
         //cout << info << endl;
         currPacketType = info["currPacketType"];
@@ -99,10 +102,10 @@ std::string DataParser::parseHeader(std::string arr, unsigned int step){
     schema["dataset"].update(streams);
 
     this->step = step;
-    return arr.substr(currIdx, arr.size());
+    return arr.substr(currIdx, arr.size()-currIdx);
 }
 
-json DataParser::addToHeader(std::string content, std::string valueStream, 
+json DataParser::parseAndAssign(std::string content, std::string valueStream, 
                         unsigned int currPacketSize, std::string currPacketType, 
                         std::string currPacketId, unsigned int step, 
                         int nextIdx, int currIdx){
@@ -128,7 +131,7 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
         currPacketSize = packetInfo["pkgSize"];
         currPacketType = packetInfo["pkgType"];
         currPacketId = packetInfo["pkgId"];
-
+        
         if(std::regex_match(currPacketType, baseMatch, streamRegex)){
             streamHeader = {{"stream", schema["stream"]}};
         }
@@ -146,7 +149,7 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
             streams[currPacketId] = {{"exception", schema["exception"]}};
             coordsys[currPacketId] = {};
         }
-        else if(std::regex_match(currPacketType, baseMatch, dataRegex))
+        else if(std::regex_match(currPacketType, baseMatch, dataRegex)){
             return {
                 {"currPacketSize", currPacketSize},
                 {"currPacketId", currPacketId}, 
@@ -154,8 +157,19 @@ json DataParser::addToHeader(std::string content, std::string valueStream,
                 {"nextIdx", (int)nextIdx},
                 {"breakout", true},
             };
-
+        }
+        else{
+            return {
+                {"currPacketSize", currPacketSize},
+                {"currPacketId", currPacketId}, 
+                {"currPacketType", currPacketType}, 
+                {"nextIdx", (int)nextIdx},
+                {"breakout", true},
+            };
+        }
         nextIdx = (int)packetInfo["nextIdx"]+currIdx;
+
+        
     }else {
         if(std::regex_match(currPacketType, baseMatch, dataRegex))
             return {
@@ -281,42 +295,59 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
 }
 
 
-void DataParser::parseData(std::string arr){
+void DataParser::parseData(val jsObj){
+    // C++ Strings have a newline considered that doesn't actually get considered in generating the number of bytes
+    // in each of the packets. As such, they are removed in order to correctly line up the byte count
+    vector<char> tArray = emscripten::convertJSArrayToNumberVector<char>(jsObj);
+
+    int pckIdx = -1;
+    // Finds the delimiters within the array data to parse the information inbetween each.
+    // Das3 will always have 4 delimiters pipes in the data
+    for (int i = 0; i < 13300; ++i) {
+        if((unsigned int)tArray[i] == 124){
+            cout << "Pipe Found at: " << i << endl;
+        }
+    }
     // Need the string to be represented as a uint8_t for parsing specific points in the data like delimiters
     // and XML tags
-    auto const arrPtr = reinterpret_cast<const uint8_t*>(&arr[0]);
+
     int currIdx;
     int nextIdx;
     std::string currPacketType = "";
-    int currPacketSize = (100 > arr.size())? arr.size() : 100;
+    int currPacketSize = (100 > tArray.size())? tArray.size() : 100;
     std::string currPacketId="0";
     currIdx = 0;
 
-    while(currIdx < arr.size()){
-        nextIdx = currIdx + currPacketSize -1;
-
-        auto valueStream = arr.substr(currIdx, nextIdx);
-
+    cout << "Array Size: " << tArray.size() << endl;
+    while(currIdx < tArray.size()){
+        nextIdx = currIdx + currPacketSize;
+        cout << "Current Index: " << currIdx << endl;
+        cout << "Next Index: " << nextIdx << endl;
+        // Use the stream information to parse the data.
+        // Information should still be contained within the WASM class via stream[id].
+        // json info = parseAndAssign(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
+        json info;
         if(step%2 == 0){
-            json info = addToHeader(arr, valueStream, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
-            // Move to next split
-            if(info.contains("breakout"))
-                break;
-
-            currPacketType = info["currPacketType"];
-            currPacketId = info["currPacketId"];
-            currPacketSize = info["currPacketSize"];
+            //arr.assign(tArray.begin() + currIdx, tArray.begin() + nextIdx);
+            //cout << arr << endl;
+            info = delimitPipeJson(reinterpret_cast<const char*>(&tArray[currIdx]), currPacketSize);
+            cout << info << endl;
+            currPacketType = info["pkgType"];
+            currPacketId = info["pkgId"];
+            currPacketSize = info["pkgSize"];
             currIdx = (int)info["nextIdx"];
-
         }else{
-            // Use the stream information to parse the data.
-            // Information should still be contained within the WASM class via stream[id].
-            
+            currIdx = nextIdx;
+            currPacketSize = (100 > (tArray.size() - (int)nextIdx))? tArray.size() : 100;
         }
+
+        cout << step << endl;
         step = step + 1;
     }
 
 }
+
+
 
 std::string DataParser::getSchema() const {
     return schema.dump(-1, ' ', true);
@@ -337,6 +368,7 @@ EMSCRIPTEN_BINDINGS(das2WasmEmbind){
         .constructor<>()
         .function("parseSchema", &DataParser::parseSchema)
         .function("parseHeader", &DataParser::parseHeader)
+        .function("parseData", &DataParser::parseData)
         .property("schema_readonly", &DataParser::getSchema)
         .property("streams_readonly", &DataParser::getStreams)
         .property("header_readonly", &DataParser::getHeader);

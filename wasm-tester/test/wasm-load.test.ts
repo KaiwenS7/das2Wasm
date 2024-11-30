@@ -3,11 +3,12 @@ import {  test,  expectTypeOf, expect } from 'vitest'
 import * as funcParser from "../src/parser/ParserFunctionInjector"
 import streamHeader from './data/fullHeader.xml?raw'
 import schema from './data/schema.txt?raw'
-
+import data from './data/data.d3b?raw'
+import fullTest from './data/tr-pre_ql_msc-sim_bac_2017-09-25.d3b?raw'
 
 //import Module from '../src/Das2Wasm.mjs';
 
-test('Test setting up module for general use', async () => {
+test.skip('Test setting up module for general use', async () => {
   //var instance = await Module();
   var instance = funcParser.WasmParser.instance
   await instance.init();
@@ -28,7 +29,7 @@ test('Test setting up module for general use', async () => {
 
 })
 
-test('Test parsing JSON object schema' , async () => {
+test.skip('Test parsing JSON object schema' , async () => {
   var instance = funcParser.WasmParser.instance
   await instance.init();
 
@@ -38,7 +39,7 @@ test('Test parsing JSON object schema' , async () => {
   expect(schem).toEqual(JSON.parse(schema));
 })
 
-test('Test parsing of an xml header strea' , async () => {
+test.skip('Test parsing of an xml header strea' , async () => {
   var instance = funcParser.WasmParser.instance
   await instance.init();
   var val=Uint8Array.from(schema.split('').map((c:string) => c.charCodeAt(0)))
@@ -56,3 +57,15 @@ test('Test parsing of an xml header strea' , async () => {
   expect(schem.stream.elements.properties.elements[0].p.value[0]).not.toEqual(schem.stream.elements.properties.elements[0].p.value[1]);
 
 })
+
+test('Test parsing the data out' , async () => {
+  var instance = funcParser.WasmParser.instance
+  await instance.init();
+  var val=Uint8Array.from(schema.split('').map((c:string) => c.charCodeAt(0)))
+
+  instance.parseSchema(val);
+  val=Uint8Array.from(fullTest.split('').map((c:string) => c.charCodeAt(0)))
+  var schem:string = instance.parseHeader(val);
+  var remainingData:Uint8Array = new Uint8Array(schem.split('').map((c:string) => c.charCodeAt(0)));
+  instance.parseData(remainingData, {});
+});

@@ -8,10 +8,18 @@
 #include "include/pugixml.hpp"
 #include "include/json.hpp"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/bind.h>
+using namespace emscripten;
+
+#else
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
+
 using json = nlohmann::json;
 using namespace std;
 namespace pt = boost::property_tree;
-
 
 // Function that takes a pointer to a template array and its size to print the elements
 template <typename T>
@@ -74,7 +82,7 @@ void printTree(pt::ptree &ptObject, int level)
 
 json& findElement(json& schema, std::string name){
     if(schema.is_array()) schema = schema[0];
-    
+
     bool found = !schema[name].is_null();
     if(found){
         return schema[name];
@@ -180,3 +188,42 @@ std::string printNodeType(pugi::xml_node& node){
         default: return "unknown";
     }
 }
+
+#ifdef __EMSCRIPTEN__
+
+template<typename T>
+void copyToVector(const val &typedArray, vector<T> &vec)
+{
+    unsigned int length = typedArray["length"].as<unsigned int>();
+    /*
+    Potential Changes needed to work with modern versions of emscripten
+
+    val heap = val::module_property("HEAPU8");
+    val memory = heap["buffer"];"
+
+    */
+
+    val heap = val::module_property("HEAPU8");
+    val memory = heap["buffer"];
+    //val memory = val::module_property("buffer");
+
+    // Apparently this is redundant since the memory is already reserved when you construct the vector
+    vec.reserve(length);
+    val memoryView = typedArray["constructor"].new_(memory, reinterpret_cast<uintptr_t>(vec.data()), length);
+    memoryView.call<void>("set", typedArray);
+}
+
+template <typename T> std::vector<T> vecFromJSArray(const emscripten::val &v)
+{
+    std::vector<T> rv;
+
+    const auto l = v["length"].as<unsigned>();
+    rv.resize(l);
+
+    emscripten::val memoryView{emscripten::typed_memory_view(l, rv.data())};
+    memoryView.call<void>("set", v);
+
+    return rv;
+}
+
+#endif
