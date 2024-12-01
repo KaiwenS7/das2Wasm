@@ -11,7 +11,7 @@ abstract class FunctionFactory{
     public abstract delimitPipe(valueStream:Uint8Array):parser.packetInfo;
     public abstract parseHeader(valueStream:Uint8Array):Uint8Array;
     public abstract parseSchema(valueStream:Uint8Array):void;
-    public abstract parseData(valueStream:Uint8Array, options:any):void;
+    public abstract parseData(valueStream:ArrayBuffer, options:any):any;
     public abstract getInfo():any;
 
     protected constructor(){}
@@ -100,11 +100,10 @@ class JsParser extends FunctionFactory{
         this.dataParserInstance = new DataParser(JSON.parse(data));
     }
 
-    parseData(valueStream: Uint8Array, options:any): void {
-        console.log("Data Received by injector")
-        console.log(this.dataParserInstance);
-        if(options["schema"]){
-            this.dataParserInstance =new DataParser(options.schema, options.xsdCoord, options.coordsys, options.staticKeys, options.streams);
+    parseData(valueStream: ArrayBuffer, options:any): any {
+        //console.log("Data Received by injector")
+        if(!this.dataParserInstance){
+            this.dataParserInstance =new DataParser(options.schema, true, options.coordsys, options.staticKeys, options.streams);
         }else{
             options = this.dataParserInstance.getParserState();
         }
@@ -119,7 +118,6 @@ class JsParser extends FunctionFactory{
         while(true){
             try {
                 val = it.next();
-                console.log(val);
                 if(val.done){
                     it = null;
                     break;
@@ -145,7 +143,7 @@ class JsParser extends FunctionFactory{
                 throw error;
             }
         }
-        console.log(data);
+        return data;
     }
 
     public static override get instance():FunctionFactory{
@@ -209,7 +207,7 @@ class WasmParser extends FunctionFactory{
             // Generate temporary data parser since management of memory needs to be done manually.
             var schema = null;
             try {
-                console.log("Parsing header");
+                //console.log("Parsing header");
                 schema = this.dataParserInstance.parseHeader(charArray, 0);
                 // Final schema should have the header information separated into the component parts
                 //console.log(this.dataParserInstance.streams_readonly);
@@ -267,13 +265,12 @@ class WasmParser extends FunctionFactory{
 
     }
 
-    parseData(valueStream: Uint8Array, options:any): void {
+    parseData(valueStream: ArrayBuffer, options:any): any {
         if(useEmbind){
-            this.dataParserInstance.parseData(valueStream);
+            this.dataParserInstance.parseData(new Uint8Array(valueStream));
             var a = this.dataParserInstance.getData("data_center");
             var b = this.dataParserInstance.getData("time_ref");
-            console.log(a.length);
-            console.log(b.length);
+            return {"data": a, "time": b};
         }
     }
 
@@ -282,8 +279,8 @@ class WasmParser extends FunctionFactory{
             return {
                 "header": JSON.parse(this.dataParserInstance.header_readonly), 
                 "streams": JSON.parse(this.dataParserInstance.streams_readonly),
-                "coordsys": this.dataParserInstance.coordsys_readonly,
-                "staticKeys": this.dataParserInstance.staticKeys_readonly,
+                "coordsys": JSON.parse(this.dataParserInstance.coordsys_readonly),
+                "staticKeys": JSON.parse(this.dataParserInstance.staticKeys_readonly),
                 "schema": JSON.parse(this.dataParserInstance.schema_readonly),
             };
         }

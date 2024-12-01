@@ -77,7 +77,7 @@ val DataParser::parseHeader(val jsObj, unsigned int step){
 
     while(currIdx < tArray.size()){
         nextIdx = currIdx + currPacketSize;
-        cout << "Next Index: " << nextIdx << endl;
+        // cout << "Next Index: " << nextIdx << endl;
 
         arr.assign(tArray.begin() + currIdx, tArray.begin() + nextIdx);
         json info = parseAndAssign(tArray, arr, currPacketSize, currPacketType, currPacketId, step, nextIdx, currIdx);
@@ -264,7 +264,14 @@ void DataParser::recursiveBuild(json& schema, pugi::xml_node& xml, std::string p
                 coordsys[packetId][childName] = json::object();
 
 
-            coordsys[packetId][childName][currentName] = child.children("vector").empty() || coordsys[packetId][childName][currentName];
+            // Wanted to just do some inline !empty(), but it fails probably due to the const
+            // Just gonna let the compiler optimize it
+            bool isVector = (child.children("vector").empty())? false : true;
+            if(coordsys[packetId][childName][currentName].is_null()){
+                coordsys[packetId][childName][currentName] = isVector;
+            }else{
+                coordsys[packetId][childName][currentName] = isVector || coordsys[packetId][childName][currentName];
+            }
         }
 
         // Build out choice elements  if possible
@@ -375,11 +382,11 @@ std::string DataParser::getStaticKeys() const{
 val DataParser::getData(std::string id) const {
     if(id.find("data") != std::string::npos){
         vector<float> dataCenter = data["data_center"];
-        cout << dataCenter[0] << endl;
+        
         return emscripten::val(emscripten::typed_memory_view(dataCenter.size(), dataCenter.data()));
     }else if(id.find("time_ref") != std::string::npos){
         vector<uint64_t> timeRef = data["time_ref"];
-        cout << timeRef[0] << endl;
+        
         return emscripten::val(emscripten::typed_memory_view(timeRef.size(), timeRef.data()));
     }
 

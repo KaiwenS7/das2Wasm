@@ -58,7 +58,7 @@ test.skip('Test parsing of an xml header strea' , async () => {
 
 })
 
-test.skip('Test parsing the data out' , async () => {
+test('Test parsing the data out' , async () => {
   var instance = funcParser.WasmParser.instance
   await instance.init();
   var val=Uint8Array.from(schema.split('').map((c:string) => c.charCodeAt(0)))
@@ -70,8 +70,7 @@ test.skip('Test parsing the data out' , async () => {
 
   var dataTesting = await fetch('http://localhost:8080/');
   var buffer= await dataTesting.arrayBuffer();
-  var data = new Uint8Array(buffer);
-  instance.parseData(data, {});
+  var data = instance.parseData(buffer, {});
 });
 
 test('Test parsing the data out' , async () => {
@@ -86,8 +85,7 @@ test('Test parsing the data out' , async () => {
 
   var dataTesting = await fetch('http://localhost:8080/');
   var buffer= await dataTesting.arrayBuffer();
-  var data = new Uint8Array(buffer);
-  console.log(instance.getInfo());
+  //var data = new Uint8Array(buffer);
 
-  funcParser.JsParser.instance.parseData(data, {step: 4});
+  var data = funcParser.JsParser.instance.parseData(buffer, {...instance.getInfo(), step: 4});
 });

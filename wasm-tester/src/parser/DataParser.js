@@ -18,7 +18,7 @@ function readFileAsync(file) {
   
 class DataParser{
 
-  constructor(schema, xsdCoord=true, coordsys={}, staticKeys={}, streams={}, streamHeader=null, funcInjection=FunctionInjector.JsParser, debug=true){
+  constructor(schema, xsdCoord=true, coordsys={}, staticKeys={}, streams={}, streamHeader=null, funcInjection=FunctionInjector.JsParser, debug=false){
     this.schema = schema;
     this.streamHeader = streamHeader;
     this.coordsys = coordsys;
@@ -404,7 +404,6 @@ class DataParser{
               start = performance.now();
             if(!this.staticKeys[currPacketId].includes(elementKey)){
 
-              console.log(dataProps[elementKey].length)
               dataProps[elementKey].push(Array.from({length: ijkSize}, 
                 (_, i) => (
                   this.roundParseInt(SchemaParser.findElement(workingChildElement, "sequence")["attributes"]["minval"]) +
