@@ -3,8 +3,6 @@
 #include <vector>
 #include <string>
 #include <streambuf>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/xml_parser.hpp>
 #include "include/pugixml.hpp"
 #include "include/json.hpp"
 
@@ -16,10 +14,8 @@ using namespace emscripten;
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 
-
 using json = nlohmann::json;
 using namespace std;
-namespace pt = boost::property_tree;
 
 // Function that takes a pointer to a template array and its size to print the elements
 template <typename T>
@@ -45,39 +41,6 @@ std::string indent(int level)
     std::string s;
     for (int i = 0; i<level; i++) s += "  ";
     return s;
-}
-
-// Function to print the property tree in a JSON format
-void printTree(pt::ptree &ptObject, int level)
-{
-    if (ptObject.empty())
-    {
-        std::cout << "\"" << ptObject.data() << "\"";
-    }
-
-    else
-    {
-        if (level) std::cout << std::endl;
-
-        std::cout << indent(level) << "{" << std::endl;
-
-        for (pt::ptree::iterator pos = ptObject.begin(); pos != ptObject.end();)
-        {
-            std::cout << indent(level + 1) << "\"" << pos->first << "\": ";
-
-            printTree(pos->second, level + 1);
-            ++pos;
-            if (pos != ptObject.end())
-            {
-                std::cout << ",";
-            }
-            std::cout << std::endl;
-        }
-
-        std::cout << indent(level) << " }";
-    }
-    std::cout << std::endl;
-    return;
 }
 
 json& findElement(json& schema, std::string name){

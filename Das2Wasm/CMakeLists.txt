@@ -12,47 +12,17 @@
 #
 cmake_policy(SET CMP0167 NEW)
 
-find_package(Boost 1.85.0 REQUIRED COMPONENTS property_tree)
-INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
-
 if (DEFINED EMSCRIPTEN)
 	# Emscripten build for binary written into the JavaScript file
-	set(EMCC_DEBUG 0)
-	include_directories(${PROJECT_SOURCE_DIR}/include)
-	add_executable (Das2Wasm "Das2Wasm.cpp" "Das2Wasm.hpp" "helpers.hpp" "schema.hpp")
-	target_include_directories(Das2Wasm PRIVATE ${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIR})
-
-	target_link_libraries(Das2Wasm PUBLIC  
-		Boost::property_tree
-	)
-
-	if (CMAKE_VERSION VERSION_GREATER 3.12)
-	  set_property(TARGET Das2Wasm PROPERTY CXX_STANDARD 17)
-	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-	endif()
-
-	set (CMAKE_CXX_STANDARD 17)
-
-	set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
-	set_target_properties(Das2Wasm PROPERTIES COMPILE_FLAGS "-Os ")
-	set_target_properties(Das2Wasm PROPERTIES LINK_FLAGS "-Os -s ASSERTIONS -sALLOW_MEMORY_GROWTH -s SINGLE_FILE=1 -s MODULARIZE -s EXPORTED_FUNCTIONS=['_free','_malloc'] -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','stackRestore','stackSave','UTF8ToString'] -sNO_DISABLE_EXCEPTION_CATCHING")
-
-	set(targetfile "${PROJECT_SOURCE_DIR}/wasm-tester/src/parser/Das2Wasm.mjs")
-
-	add_custom_command(TARGET Das2Wasm POST_BUILD
-    	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:Das2Wasm> ${targetfile}
-	)
-
-	# Emscripten build for binary written into the JavaScript file
 	add_executable(Das2WasmEmbind "das2WasmEmbind.cpp" "das2WasmEmbind.hpp" "helpers.hpp" "include/pugiconfig.hpp" "include/pugixml.hpp" "include/pugixml.cpp")
-	target_include_directories(Das2WasmEmbind PRIVATE ${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIR})
-	target_link_libraries(Das2WasmEmbind PUBLIC  
-		Boost::property_tree
-	)
-	
+	target_include_directories(Das2WasmEmbind PRIVATE ${PROJECT_SOURCE_DIR}/include)
+
 	if (CMAKE_VERSION VERSION_GREATER 3.12)
 	  set_property(TARGET Das2WasmEmbind PROPERTY CXX_STANDARD 17)
+	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 	endif()
+	set (CMAKE_CXX_STANDARD 17)
+	set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
 	
 	set_target_properties(Das2WasmEmbind PROPERTIES COMPILE_FLAGS "-Os")
 	set_target_properties(Das2WasmEmbind PROPERTIES LINK_FLAGS "-Os -lembind -s ASSERTIONS -sALLOW_MEMORY_GROWTH -s SINGLE_FILE=1 -s MODULARIZE -s EXPORTED_FUNCTIONS=['_free','_malloc'] -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','stackRestore','stackSave','UTF8ToString'] -sNO_DISABLE_EXCEPTION_CATCHING -sWASM_BIGINT")
@@ -64,7 +34,4 @@ if (DEFINED EMSCRIPTEN)
 	)
 else()
 	add_library(Das2Wasm SHARED "Das2Wasm.cpp")
-	target_link_libraries(Das2Wasm PUBLIC  
-		Boost::property_tree
-	)
 endif()
