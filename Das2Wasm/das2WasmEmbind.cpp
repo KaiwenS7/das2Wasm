@@ -400,6 +400,17 @@ EMSCRIPTEN_BINDINGS(das2WasmEmbind){
                                  return delimitPipe(s.c_str(), s.size());
                               }));
 
+    emscripten::function("test", &test_fftw);
+
+    emscripten::function("fftw", optional_override(
+                           [](val x, val y, val z, unsigned int sampleRate){
+                                vector<double> xType = emscripten::vecFromJSArray<double>(x);
+                                vector<double> yType = emscripten::vecFromJSArray<double>(y);
+                                vector<double> zType = emscripten::vecFromJSArray<double>(z);
+                                vector<double> result = vector3dFft(xType, yType, zType, sampleRate);
+                                return  emscripten::val(emscripten::typed_memory_view(result.size(), result.data()));
+                            }));
+
     emscripten::class_<DataParser>("DataParser")
         .constructor<>()
         .function("parseSchema", &DataParser::parseSchema)

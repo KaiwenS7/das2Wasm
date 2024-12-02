@@ -12,7 +12,8 @@
 #include <typeinfo>
 
 #include "helpers.hpp"
-#include "schema.hpp"
+#include "fftwInterface.hpp"
+
 #include "include/json.hpp"
 using json = nlohmann::json;
 #include "include/pugixml.hpp"

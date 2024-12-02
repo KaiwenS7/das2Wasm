@@ -167,6 +167,7 @@ class WasmParser extends FunctionFactory{
                 pkgId:  "",
             };
         if(useEmbind){
+            
             return JSON.parse(this.wasmInstance.delimitPipe(new TextDecoder().decode(charArray)));
         }
 
@@ -284,6 +285,19 @@ class WasmParser extends FunctionFactory{
                 "schema": JSON.parse(this.dataParserInstance.schema_readonly),
             };
         }
+    }
+
+    public calculateFft(data:Float64Array):any{
+        if(useEmbind){
+            var x=[],y=[],z=[];
+            for(let i = 0; i < data.length; i=i+3){
+                x.push(data[i]);
+                y.push(data[i+1]);
+                z.push(data[i+2]);
+            }
+            return this.wasmInstance.fftw(x, y, z, 1024);
+        }
+        return new Float64Array();
     }
 
     override async init(){

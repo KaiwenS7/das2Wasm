@@ -51,12 +51,12 @@ describe('dataParsing', async () => {
   val=Uint8Array.from(fullTest.split('').map((c:string) => c.charCodeAt(0)))
   var remainingData:Uint8Array = instance.parseHeader(val);
 
-  bench('wasm-data' , async () => {
-    var data = instance.parseData(buffer, {});
-  }, {iterations: 100});
-  
   bench('js-data' , async () => {
     var data = funcParser.JsParser.instance.parseData(buffer, {...instance.getInfo(), step: 4});
+  }, {iterations: 100});
+  
+  bench('wasm-data' , async () => {
+    var data = instance.parseData(buffer, {});
   }, {iterations: 100});
   
 })
